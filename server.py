@@ -17,7 +17,6 @@ from generator import get_values_for_label, gather_data
 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 app.config['DEBUG'] = True
 
