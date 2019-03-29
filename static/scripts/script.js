@@ -625,13 +625,13 @@ function _generateEntry(category, keys, category_data) {
     let table = document.getElementById("table");
 
     let graphWrapper = document.createElement("div");
-    let att = document.createAttribute("class")
+    let att = document.createAttribute("class");
     att.value = "graphWrapper";
-    graphWrapper.setAttributeNode(att)
+    graphWrapper.setAttributeNode(att);
 
     // Create category title
     let tr = document.createElement("tr");
-    att = document.createAttribute("class")
+    att = document.createAttribute("class");
     att.value = "tr categoryTitle";
     tr.setAttributeNode(att);
     tr.innerText = category.toUpperCase();
@@ -708,7 +708,7 @@ function _generateEntry(category, keys, category_data) {
     if (!category_data["settings"].includes("nograph"))
     {
         tr = document.createElement("tr");
-        att = document.createAttribute("class")
+        att = document.createAttribute("class");
         att.value = "tr canvastd";
         tr.setAttributeNode(att);
 
