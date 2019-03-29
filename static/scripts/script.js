@@ -600,7 +600,7 @@ function _updateCanvas(category_data, canvas) {
 
     let text = _timestampToTime(cursorTimeSnapped, true);
     let fontSize = 36;
-    let fontPosX = cursorX;
+    let fontPosX = Math.max(0, Math.min(cursorX, width));
     let fontPosY = fontSize + 5;
 
     ctx.font = fontSize + "px Oswald";
@@ -610,6 +610,7 @@ function _updateCanvas(category_data, canvas) {
         ctx.textAlign = "right";
     else
         ctx.textAlign = "center";
+
     ctx.strokeStyle = "#333";
     ctx.lineWidth = 12;
     ctx.strokeText(text, fontPosX, fontPosY);
