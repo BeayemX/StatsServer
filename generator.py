@@ -13,7 +13,8 @@ import psutil
 conf = configparser.ConfigParser()
 conf.read(os.path.join(os.path.dirname(__file__),"settings.conf"))
 
-DB_FILE = os.path.join(conf["Generator"]["DatabaseDirectory"], conf["Generator"]["DatabaseName"])
+DB_DIR = conf["Generator"]["DatabaseDirectory"]
+DB_FILE = os.path.join(DB_DIR, conf["Generator"]["DatabaseName"])
 TIME_STEP = conf["Generator"].getfloat("Timestep")
 MAX_AGE = conf["Generator"].getfloat("MaxAge") # in seconds
 
@@ -140,7 +141,7 @@ def add_disk_entries(data):
 
     entries = {}
     entries["Disk"] = psutil.disk_usage('/').percent
-    entries["RAM Disk"] = psutil.disk_usage('/var/ramdisk').percent
+    entries["DB Directory"] = psutil.disk_usage(DB_DIR).percent
 
     category["entries"] = entries
     data["storage"] = category
