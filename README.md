@@ -36,6 +36,17 @@ Install all python dependencies by running:
 ```
 pip install requirements -r --user
 ```
+# The client
+At the moment the client is only designed for mobile phones. (A desktop version will follow soon).
+
+The client can update automatically or only when you press the refresh button.
+You can adjust the timerange of the graphs with the dropdown on the top-left.
+
+You can use pinch to zoom the graph.
+
+When using one touch in the upper half of the graph you can move the cursor.
+
+When using one touch in the lower half of the graph you can move the graph.
 
 # Settings
 The project stores the database in `/var/ramdisk/`. If you want to use a different directory you have to adjust this in `generator.py`.
