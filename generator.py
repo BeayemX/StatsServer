@@ -9,7 +9,7 @@ import configparser
 import psutil
 
 
-# load settings from config file
+# Load settings from config file
 conf = configparser.ConfigParser()
 conf.read(os.path.join(os.path.dirname(__file__),"settings.conf"))
 
@@ -17,6 +17,10 @@ DB_DIR = conf["Generator"]["DatabaseDirectory"]
 DB_FILE = os.path.join(DB_DIR, conf["Generator"]["DatabaseName"])
 TIME_STEP = conf["Generator"].getfloat("Timestep")
 MAX_AGE = conf["Generator"].getfloat("MaxAge") # in seconds
+
+# Create database directory if it does not exist
+if not os.path.exists(DB_DIR):
+    os.makedirs(DB_DIR)
 
 def add_database_entry(cursor, category, label, value):
     current_time = time.time()
