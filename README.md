@@ -48,14 +48,13 @@ When using one touch in the upper half of the graph you can move the cursor.
 
 When using one touch in the lower half of the graph you can move the graph.
 
-# Settings
-The project stores the database in `/var/ramdisk/`. If you want to use a different directory you have to adjust this in `generator.py`.
+# Configuration
+There is a `settings.conf` file where you can adjust the server to your requirements.
+This file has two sections. One for the generator and one for the server.
 
-You can also adjust the port to connect to. By default the port is `5050`. This can be adjusted in the `server.py` at the bottom of the file.
+For the server you can change the port to connect to and if you want to run the flask server in debug mode.
 
-By default data is gathered every 10 seconds. You can adjust this by setting `TIME_STEP` in `generator.py`.
-
-Data will be stored 24 hours. Every dataset older than this will be deleted. This can be adjusted in `generator.py` by setting the variable `MAX_AGE`.
+For the generator you can chose the directory and the name of the database. How often data is gathered and the maximal age of the data.
 
 # How to add your own data to the graphs
 You can add your own data by modifying the `gather_data()` function in `generator.py`.
