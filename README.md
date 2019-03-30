@@ -3,13 +3,23 @@
 This project is used to give you an overview of a computer and its system resources.
 There are graphs showing the history of the data. You can zoom in on the graphs and select any given moment on the graph to see the data for this time.
 
+![Screenshot from 2019-03-30 14-51-05](https://user-images.githubusercontent.com/3453076/55277078-4a1a8900-52fc-11e9-89e6-4c66d082e14a.png)
+![Screenshot from 2019-03-30 14-51-41](https://user-images.githubusercontent.com/3453076/55277083-5a326880-52fc-11e9-969a-e415f589fdf9.png)
+![Screenshot from 2019-03-30 14-52-07](https://user-images.githubusercontent.com/3453076/55277085-5dc5ef80-52fc-11e9-8303-aa85dd0b2bfb.png)
+
+
+# How to run everything
 There are two files you have to run. One is the `generator.py` which stores the data in an SQLite-database.
+
+```
+python3 generator.py # assuming Python 3.6
+
+```
+
 The other file is the `server.py` which runs a flask server where clients can connect to using a browser. 
 At the moment the client is designed to be accessed from a mobile phone. You can even use the website as a Progressive Web App.
 
-# How to run everything
 ```
-python3 generator.py # assuming Python 3.6
 python3 server.py # assuming Python 3.6
 ```
 
