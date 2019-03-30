@@ -68,3 +68,4 @@ For some examples more just check out the already existing functions called in `
 
 # Future
 Make UI responsive to be able to be used from the desktop.
+Add process list to see which processes take up most of the system resources.
