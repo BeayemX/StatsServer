@@ -3,14 +3,19 @@ import os
 import time
 import math, random # Needed for test values
 from sqlite3 import connect
+import configparser
 
 # PIP
 import psutil
 
 
-DB_FILE = "/var/ramdisk/data.db"
-TIME_STEP = 10.0
-MAX_AGE = 60 * 60 * 24 # in seconds
+# load settings from config file
+conf = configparser.ConfigParser()
+conf.read(os.path.join(os.path.dirname(__file__),"settings.conf"))
+
+DB_FILE = os.path.join(conf["Generator"]["DatabaseDirectory"], conf["Generator"]["DatabaseName"])
+TIME_STEP = conf["Generator"].getfloat("Timestep")
+MAX_AGE = conf["Generator"].getfloat("MaxAge") # in seconds
 
 def add_database_entry(cursor, category, label, value):
     current_time = time.time()

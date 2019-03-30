@@ -4,6 +4,7 @@ import sys
 import time
 import socket
 import json
+import configparser
 
 # PIP
 import psutil
@@ -16,11 +17,19 @@ from flask_socketio import SocketIO, send, emit
 from generator import get_values_for_label, gather_data
 
 
+# Load settings from config file
+conf = configparser.ConfigParser()
+conf.read(os.path.join(os.path.dirname(__file__),"settings.conf"))
+PORT = conf["Server"].getint("Port")
+DEBUG = conf["Server"].getboolean("Debug")
+
+# Initialize server
 app = Flask(__name__)
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
-app.config['DEBUG'] = False
+app.config['DEBUG'] = DEBUG
 
 socketio = SocketIO(app, async_mode='eventlet')
+
 
 def get_data_as_json(last_server_sync_timestamp):
     gathered_data = gather_data()
@@ -60,4 +69,4 @@ def handle_my_custom_event(json_data):
     emit("update_data", get_data_as_json(json_data["last_server_sync_timestamp"]))
 
 if __name__ == '__main__':
-	socketio.run(app, host='0.0.0.0', port=5050)
+	socketio.run(app, host='0.0.0.0', port=PORT)
