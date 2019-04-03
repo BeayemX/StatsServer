@@ -173,11 +173,7 @@ function handleDataUpdate(data_json_s) {
 
 
     // Show time of last update
-    const currentDate = new Date();
-    let hour = currentDate.getHours().toString().padStart(2, '0');
-    let min = currentDate.getMinutes().toString().padStart(2, '0');
-    let sec = currentDate.getSeconds().toString().padStart(2, '0');
-    timeDisplay.innerText =  `Last update: ${hour}:${min}:${sec}`;
+    timeDisplay.innerText =  `Last update: ${_timestampToTime(last_server_sync_timestamp)}`;
 
     // Store data on client
     if (cachedData == null)
@@ -286,16 +282,12 @@ function _updateBars(categoryData, categoryName) {
 }
 
 function _timestampToTime(timestamp, wrap24hours = false) {
-    timestamp = Math.round(timestamp);
-    timestamp += 60*60 // HACK UTC-timestamp to CET
+    let date = new Date(timestamp * 1000);
+    let hour = date.getHours().toString().padStart(2, '0');
+    let min = date.getMinutes().toString().padStart(2, '0');
+    let sec = date.getSeconds().toString().padStart(2, '0');
+    return `${hour}:${min}:${sec}`;
 
-    if (wrap24hours)
-    {
-        // hour = hour % 24;
-        timestamp = timestamp % (60 * 60 * 24)
-    }
-
-    return _secondsToTime(timestamp);
 }
 
 function _secondsToTime(seconds) {
