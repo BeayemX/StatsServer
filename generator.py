@@ -17,10 +17,17 @@ DB_DIR = conf["Generator"]["DatabaseDirectory"]
 DB_FILE = os.path.join(DB_DIR, conf["Generator"]["DatabaseName"])
 TIME_STEP = conf["Generator"].getfloat("Timestep")
 MAX_AGE = conf["Generator"].getfloat("MaxAge") # in seconds
+MAX_NETWORK_SPEED = conf["Generator"].getfloat("MaxNetworkSpeed") # in MByte
+MAX_NETWORK_SPEED *= TIME_STEP
+
+# Network variables
+sent_byte = psutil.net_io_counters()[0]
+received_byte = psutil.net_io_counters()[1]
 
 # Create database directory if it does not exist
 if not os.path.exists(DB_DIR):
     os.makedirs(DB_DIR)
+
 
 def add_database_entry(cursor, category, label, value):
     current_time = time.time()
@@ -52,6 +59,7 @@ def gather_data():
     add_temperature_entries(data)
     add_memory_entries(data)
     add_disk_entries(data)
+    add_network_entries(data)
 
     return data
 
@@ -150,6 +158,42 @@ def add_disk_entries(data):
     category["entries"] = entries
     data["storage"] = category
 
+def add_network_entries(data):
+    global sent_byte
+    global received_byte
+
+    category = create_category(" MB", 0, MAX_NETWORK_SPEED)
+
+    #nics = psutil.net_if_stats()
+    #for nic in nics:
+        #print(nic, nics[nic])
+
+    new_sent = psutil.net_io_counters()[0]
+    new_received = psutil.net_io_counters()[1]
+
+    # Calculate delta
+    delta_sent = new_sent - sent_byte
+    delta_received = new_received - received_byte
+
+    # Convert to MB
+    delta_sent /= 1024 * 1024
+    delta_received /= 1024 * 1024
+
+    # Round to 3 decimals
+    delta_sent = round(delta_sent * 1000) / 1000
+    delta_received = round(delta_received * 1000) / 1000
+
+    # Store current network stats
+    sent_byte = new_sent
+    received_byte = new_received
+
+    entries = {}
+    entries["Sent"] = delta_sent
+    entries["Received"] = delta_received
+
+    category["entries"] = entries
+    data["Network"] = category
+
 
 # Run main program
 if __name__ == "__main__":
@@ -177,6 +221,6 @@ if __name__ == "__main__":
             delta = end_time - start_time
             clean_up_database(cursor)
 
-        print(delta)
+        # print(delta)
         # print(".", end="", flush=True)
         time.sleep(max(0, TIME_STEP - delta))
