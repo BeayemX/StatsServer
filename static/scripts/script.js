@@ -89,16 +89,15 @@ function onLoad() {
     timedropdown = document.getElementById("timedropdown");
     customOptionSelect = document.createElement('option');
 
+    // Setting value and innerHTML for customOptionSelect not needed
+    // Will trigger update automatically when values are loaded
     let option = customOptionSelect
-    option.value = _getTimeRange();
-    option.innerHTML = _secondsToTime(_getTimeRange());
-
     timedropdown.appendChild(option);
 
     for (let time of _getTimeRanges()) {
         option = document.createElement('option');
         option.value = time;
-        option.innerHTML = _secondsToTime(time);
+        option.innerHTML = _humanizeTime(time);
         timedropdown.appendChild(option);
     }
 
@@ -299,7 +298,8 @@ function _secondsToTime(seconds) {
 
 
     let text = "";
-    text += hour + ":";
+    if (hour > 0)
+        text += hour + ":";
     text += (min % 60).toString().padStart(2, '0') + ":";
     text += sec.toString().padStart(2, '0');
 
@@ -1044,6 +1044,40 @@ function roughSizeOfObject( object ) {
     }
     return bytes;
 }
+
 function humanizeBytes(bytes) {
     return (Math.round((bytes / 1024 / 1024) * 1000) / 1000) + " MB";
+}
+
+function _humanizeTime(sec) {
+    var hours   = Math.floor(sec / 3600);
+    var minutes = Math.floor((sec - (hours * 3600)) / 60);
+    var seconds = sec - (hours * 3600) - (minutes * 60);
+
+    let text = "";
+
+    if(hours > 0)
+    {
+        text += hours   + ' hour';
+        if (hours != 1)
+            text += 's';
+        text += ' ';
+    }
+
+    if(minutes > 0)
+    {
+        text += minutes + ' minute';
+        if (minutes != 1)
+            text += 's';
+        text += ' ';
+    }
+
+    if(seconds > 0)
+    {
+        text += seconds + ' second';
+        if(seconds != 1)
+            text += 's';
+    }
+
+    return text;
 }
