@@ -1,7 +1,7 @@
 # Standard library
 import os
 import time
-import math, random # Needed for test values
+import math, random, datetime # Needed for test values
 from sqlite3 import connect
 import configparser
 
@@ -52,8 +52,9 @@ def get_values_for_label(category, label, last_server_sync_timestamp):
 
 def gather_data():
     data = {}
-    # add_sinus_entries(data) # Testing
+    #add_sinus_entries(data) # Testing
     # add_random_entries(data) # Testing
+    # add_linear_entries(data) # Testing
     add_cpu_entries(data)
     add_load_entries(data)
     add_temperature_entries(data)
@@ -99,6 +100,25 @@ def add_random_entries(data):
 
     category["entries"] = entries
     data["Random values"] = category
+
+def add_linear_entries(data):
+    category = create_category("", 0, 100)
+    entries = {}
+    """
+
+    for i in range(8):
+        rand_value = 1
+        for j in range(i):
+             rand_value *= random.random()
+        entries[f"Random{i}"] = rand_value
+    """
+    now = datetime.datetime.now()
+    entries["Hours"] = now.hour / 24.0 * 100
+    entries["Minutes"] = now.minute / 60.0 * 100
+    entries["Seconds"] = now.second / 60.0 * 100
+
+    category["entries"] = entries
+    data["Percent time"] = category
 
 def add_load_entries(data):
     category = create_category("", 0, psutil.cpu_count())
