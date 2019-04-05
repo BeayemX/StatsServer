@@ -142,16 +142,35 @@ body {
 }
 .bar {
     flex-grow: 1;
-    font-family: monospace;
-    letter-spacing: -16pt;
+    display: flex;
+    flex-direction: column;
+    /*
+    border: 2px solid green;
+    */
 }
+
+.bar canvas{
+    flex-grow: 1;
+    width: 80%;
+    margin-left: 18%;
+    margin-right: 2%;
+    margin-top: 2%;
+    margin-bottom: 2%;
+    /*
+    margin-right: 5%;
+    */
+    background-color: transparent;
+    height: 10;
+}
+
 .canvastd {
     flex-grow: 1;
 }
-canvas {
-    background-color: #333;
+
+.canvastd canvas {
     width: 100%;
     height: 300px;
+    background-color: #333;
     /*
     border: 2px solid #ddd;
     */

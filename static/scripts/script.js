@@ -105,7 +105,7 @@ function onLoad() {
 
 
     // Set up DOM elements / Initialize elements
-    _updateDebugMode(false);
+    _updateDebugMode(false); // TODO why is this called two times?
 
     // Update UI
     updateTimeRangeDisplay();
@@ -255,7 +255,12 @@ function _getValueAtCursor(categoryData, key) {
 }
 
 function _updateBars(categoryData, categoryName) {
+    let colorCounter = 0;
+
     for (const key of Object.keys(categoryData["entries"])) {
+        let color = availableColors[colorCounter % availableColors.length];
+        colorCounter += 1;
+
         // Label
         elements[categoryName][key]["label"].innerText = key;
 
@@ -266,27 +271,51 @@ function _updateBars(categoryData, categoryName) {
         // Bar
         let min = categoryData["min"];
         let max = categoryData["max"];
-        let needed = Math.round(((value - min) / (max - min)) * maxBars);
+        let neededPerc = ((value - min) / (max - min));
         let text = "";
+        let canvas = elements[categoryName][key]["bar"];
 
-        for (let i=0; i<maxBars; ++i) {
-            if (i < needed)
-                text += "|";
-            else
-                text += nbsp;
+        let width = canvas.scrollWidth;
+        let height = canvas.scrollHeight;
+        canvas.width = width;
+        canvas.height = height;
+
+        let ctx = canvas.getContext("2d");
+        let indicatorSize = 3;
+
+        ctx.strokeStyle = color;
+        ctx.lineWidth = height;
+        ctx.setLineDash([indicatorSize, indicatorSize * 2]);
+
+        // Snap to full bar size
+        let length = Math.round(neededPerc * width / indicatorSize) * indicatorSize;
+        let halfHeight = height * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(0, halfHeight);
+        ctx.lineTo(length, halfHeight);
+        ctx.stroke();
+
+        if (debugMode)
+        {
+            ctx.lineWidth = indicatorSize;
+            let targetY = height - indicatorSize * 0.5;
+            ctx.beginPath();
+            ctx.moveTo(0, targetY);
+            ctx.lineTo(width, targetY);
+            ctx.stroke();
         }
 
-        elements[categoryName][key]["bar"].innerText = text;
+        ctx.setLineDash([]);
     }
 }
 
-function _timestampToTime(timestamp, wrap24hours = false) {
+function _timestampToTime(timestamp) {
     let date = new Date(timestamp * 1000);
     let hour = date.getHours().toString().padStart(2, '0');
     let min = date.getMinutes().toString().padStart(2, '0');
     let sec = date.getSeconds().toString().padStart(2, '0');
-    return `${hour}:${min}:${sec}`;
 
+    return `${hour}:${min}:${sec}`;
 }
 
 function _secondsToTime(seconds) {
@@ -295,7 +324,6 @@ function _secondsToTime(seconds) {
     let hour = Math.floor(seconds / 60 / 60);
     const min = Math.floor(seconds / 60);
     const sec = seconds - min * 60;
-
 
     let text = "";
     if (hour > 0)
@@ -389,6 +417,9 @@ function _updateCanvas(category_data, canvas) {
     let keys = Object.keys(category_data["entries"])
     let ctx = canvas.getContext("2d");
 
+    // TODO why do this on update, wouldnt it be sufficient to do it when creating?
+    // maybe because when creating canvas it is not in the DOM tree yet and therefore it
+    // won't have any size...
     let width = canvas.scrollWidth;
     let height = canvas.scrollHeight;
     canvas.width = width;
@@ -590,7 +621,7 @@ function _updateCanvas(category_data, canvas) {
     // */
     ctx.setLineDash([]);
 
-    let text = _timestampToTime(cursorTimeSnapped, true);
+    let text = _timestampToTime(cursorTimeSnapped);
     let fontSize = 36;
     let fontPosX = Math.max(0, Math.min(cursorX, width));
     let fontPosY = fontSize + 5;
@@ -683,7 +714,10 @@ function _generateEntry(category, keys, category_data) {
         att.value = "td bar";
         td.setAttributeNode(att);
 
-        rowElement["bar"] = td;
+        let canvas = document.createElement("canvas");
+        td.appendChild(canvas);
+
+        rowElement["bar"] = canvas;
 
         tr.appendChild(td);
 
@@ -781,7 +815,6 @@ function _getTimeRanges() {
 }
 
 function setTimeRange(dropdownIndex) { // TODO return [leftBound, rightBound]?
-
     _timeRange = _getTimeRanges()[dropdownIndex - 1]; // -1 because of 'custom' entry showing current timerange
     changeTimeRange(0); // to trigger necessary updates
 }
@@ -846,9 +879,11 @@ function _updateDebugMode(check=true) {
         enableDebugMode(check);
     else
         disableDebugMode(check);
+
+    _updateGraphs(); // to show/hide lenght indicator dots for bars
 }
 
-function enableDebugMode(check=true) {
+function enableDebugMode(check = true) {
     if (debugMode === true && check)
         return;
 
@@ -857,6 +892,7 @@ function enableDebugMode(check=true) {
     wrapper.appendChild(debugOverlay);
 
     storeSettings();
+    _updateGraphs(); // to update lenght indicator for bars
 }
 
 function disableDebugMode(check=true) {
@@ -870,6 +906,7 @@ function disableDebugMode(check=true) {
     debugOverlay.remove();
 
     storeSettings();
+    _updateGraphs(); // to update lenght indicator for bars
 }
 
 function timedisplayClicked() {
