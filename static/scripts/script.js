@@ -21,10 +21,6 @@ let availableColors = [
 const DEFAULT_AUTO_RELOAD = true;
 const DEFAULT_TIME_RANGE = 60*60;
 const RELOAD_MINIMUM_TIME_MS = 2000;
-
-const nbsp = "\xa0";
-const maxBars = 56;
-
 const timeRanges = [60, 60*5, 60*10, 60*30, 60*60, 60*60 * 6, 60*60 * 12, 60*60*24];
 
 // Members
