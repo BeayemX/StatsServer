@@ -1079,7 +1079,28 @@ function roughSizeOfObject( object ) {
 }
 
 function humanizeBytes(bytes) {
-    return (Math.round((bytes / 1024 / 1024) * 1000) / 1000) + " MB";
+    const conversionFactor = 1024.0;
+
+    const KB = bytes / conversionFactor;
+    const MB = KB / conversionFactor;
+    const GB = MB / conversionFactor;
+
+    if (bytes < conversionFactor)
+        return bytes + " B";
+
+    if (KB < conversionFactor)
+        return roundToDecimals(KB, 1) + " KB";
+
+    if (MB < conversionFactor)
+        return roundToDecimals(MB, 2) + " MB";
+
+    return roundToDecimals(GB, 2) + " GB";
+}
+
+// UTILITIES
+function roundToDecimals(value, decimals) {
+    const power = Math.pow(10, decimals);
+    return (Math.round(value * power) / power);
 }
 
 function _humanizeTime(sec) {
