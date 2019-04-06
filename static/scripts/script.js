@@ -1106,8 +1106,8 @@ function humanizeBytes(bytes) {
     if (MB < conversionFactor)
         return roundToDecimals(MB, 2) + " MB";
 
-        const GBDecismals = GB < 100 ? 2 : 1;
-    return roundToDecimals(GB, GBDecismals) + " GB";
+        const GBDecimals = GB < 100 ? 2 : 1;
+    return roundToDecimals(GB, GBDecimals) + " GB";
 }
 
 // UTILITIES
