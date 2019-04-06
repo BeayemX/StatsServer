@@ -66,7 +66,13 @@ def index():
 
 @socketio.on('request_data')
 def handle_my_custom_event(json_data):
-    emit("update_data", get_data_as_json(json_data["last_server_sync_timestamp"]))
+    ts = json_data["last_server_sync_timestamp"]
+    try:
+        ts = int(ts)
+    except ValueError:
+        ts = 0
+
+    emit("update_data", get_data_as_json(ts))
 
 if __name__ == '__main__':
 	socketio.run(app, host='0.0.0.0', port=PORT)
