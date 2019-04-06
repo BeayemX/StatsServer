@@ -37,16 +37,16 @@ def get_data_as_json(last_server_sync_timestamp):
     categories = {}
 
     for category_key, category_data in gathered_data.items():
-        category = {}
-        category["unit"] = category_data["unit"]
-        category["min"] = category_data["min"]
-        category["max"] = category_data["max"]
-        category["settings"] = category_data["settings"]
+        # to copy 'settings' and so on...
+        # # this also provides 'value' entry with just the current value
+        # 'values' contains only legacy values from the database
+        category = category_data
 
         entries = {}
 
         for key in category_data["entries"].keys():
-            entries[key] = get_values_for_label(category_key, key, last_server_sync_timestamp)
+            entries[key] = category_data["entries"][key] # copy every member, e.g. unit, max, min, ...
+            entries[key]["values"] = get_values_for_label(category_key, key, last_server_sync_timestamp)
 
         category["entries"] = entries
 

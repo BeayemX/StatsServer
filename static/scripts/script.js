@@ -181,7 +181,7 @@ function handleDataUpdate(data_json_s) {
             for (let entryName in category_data["entries"])
             {
                 let entryData = category_data["entries"][entryName];
-                cachedData["categories"][categoryName]["entries"][entryName] = cachedData["categories"][categoryName]["entries"][entryName].concat(entryData);
+                cachedData["categories"][categoryName]["entries"][entryName]["values"] = cachedData["categories"][categoryName]["entries"][entryName]["values"].concat(entryData["values"]);
             }
         }
     }
@@ -262,11 +262,16 @@ function _updateBars(categoryData, categoryName) {
 
         // Value
         let value = _getValueAtCursor(categoryData, key)[1];
-        elements[categoryName][key]["value"].innerText = (Math.round(value * 100) / 100) + categoryData["unit"];
+
+        if (categoryData["entries"][key]["unit"] == "byte") {
+            elements[categoryName][key]["value"].innerText = humanizeBytes(value);
+        } else {
+            elements[categoryName][key]["value"].innerText = (Math.round(value * 100) / 100) + categoryData["entries"][key]["unit"];
+        }
 
         // Bar
-        let min = categoryData["min"];
-        let max = categoryData["max"];
+        let min = categoryData["entries"][key]["min"];
+        let max = categoryData["entries"][key]["max"];
         let neededPerc = ((value - min) / (max - min));
         let text = "";
         let canvas = elements[categoryName][key]["bar"];
@@ -337,7 +342,7 @@ function updateTimeRangeDisplay() {
 }
 
 function _getValuesForVisibleTimeRange(categoryData, entryName) {
-    const values = categoryData["entries"][entryName];
+    const values = categoryData["entries"][entryName]["values"];
     let timeRange = _getTimeRange();
 
     // Find first value that does not fall into timerange
@@ -422,8 +427,8 @@ function _updateCanvas(category_data, canvas) {
     canvas.height = height;
 
     // find highest value
-    let minValue = category_data["max"];
-    let maxValue = category_data["min"];
+    let minValue = Infinity;
+    let maxValue = -Infinity;
     let avg = 0;
     let avgCounter = 0;
 
@@ -445,7 +450,7 @@ function _updateCanvas(category_data, canvas) {
     let timeStampConsideringServerDelay = 0;
 
     for (const key of keys) {
-        const allValues = category_data["entries"][key];
+        const allValues = category_data["entries"][key]["values"];
         timeStampConsideringServerDelay = Math.max(timeStampConsideringServerDelay, allValues[allValues.length -1][0])
     }
 
@@ -471,15 +476,17 @@ function _updateCanvas(category_data, canvas) {
     ctx.beginPath();
 
     // Horizontal lines
-    const y = _getY(category_data["min"], category_data["max"], (category_data["min"] + category_data["max"]) / 2);
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
+    //const min = category_data["entries"][key]["min"];
+    //const max = category_data["entries"][key]["max"];
+    //const y = _getY(min, max, (min + max) / 2);
+    ctx.moveTo(0, height * 0.25);
+    ctx.lineTo(width, height * 0.25);
 
-    ctx.moveTo(0, y*0.5);
-    ctx.lineTo(width, y*0.5);
+    ctx.moveTo(0, height * 0.5);
+    ctx.lineTo(width, height * 0.5);
 
-    ctx.moveTo(0, y * 1.5);
-    ctx.lineTo(width, y * 1.5);
+    ctx.moveTo(0, height * 0.75);
+    ctx.lineTo(width, height * 0.75);
 
     // Vertical lines
     const right = rightValueBound;
@@ -536,7 +543,7 @@ function _updateCanvas(category_data, canvas) {
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(_getX(allValues[0][0]), _getY(category_data["min"], category_data["max"], allValues[0][1]));
+        ctx.moveTo(_getX(allValues[0][0]), _getY(category_data["entries"][key]["min"], category_data["entries"][key]["max"], allValues[0][1]));
 
         for (let i=1; i<allValues.length; ++i)
         {
@@ -546,14 +553,14 @@ function _updateCanvas(category_data, canvas) {
 
             ctx.lineTo(
                 _getX(timestamp),
-                _getY(category_data["min"], category_data["max"], actualValue)
+                _getY(category_data["entries"][key]["min"], category_data["entries"][key]["max"], actualValue)
             );
         }
         ctx.stroke();
     }
 
     function _drawLimit(value, drawLine=true, label="") {
-        let limitY = _getY(category_data["min"], category_data["max"], value);
+        let limitY = _getY(category_data["entries"][key]["min"], category_data["entries"][key]["max"], value);
 
         // Draw line
         if (drawLine) {
@@ -569,7 +576,7 @@ function _updateCanvas(category_data, canvas) {
         }
 
         // Draw text
-        let text = Math.round(value*100)/100 + category_data["unit"]
+        let text = Math.round(value*100)/100 + category_data["entries"][key]["unit"]
         let fontSize = 36;
         let fontOffset = fontSize * 0.5;
         let fontPosY = limitY + fontOffset;
@@ -583,11 +590,16 @@ function _updateCanvas(category_data, canvas) {
         ctx.fillStyle = "#ddd";
         ctx.fillText(label + text, 10, fontPosY);
     }
-    _drawLimit(category_data["min"], false);
-    _drawLimit(category_data["max"], false);
+    /*
+    if (category_data["min"])
+        _drawLimit(category_data["min"], false);
+    if (category_data["max"])
+        _drawLimit(category_data["max"], false);
+
     _drawLimit(minValue);
     _drawLimit(maxValue);
     // _drawLimit(avg, true, "Average: ");
+   */
 
     // Draw cursor
     ctx.strokeStyle = "#0f0";
@@ -827,7 +839,7 @@ function _updateOldestTimeStamp() {
     {
         const category_data = categories[categoryName];
         for (let entryName in category_data["entries"]) {
-            const allValues = category_data["entries"][entryName];
+            const allValues = category_data["entries"][entryName]["values"];
             tmpOldestTimestamp = Math.min(tmpOldestTimestamp, allValues[0][0])
         }
     }
@@ -1094,7 +1106,8 @@ function humanizeBytes(bytes) {
     if (MB < conversionFactor)
         return roundToDecimals(MB, 2) + " MB";
 
-    return roundToDecimals(GB, 2) + " GB";
+        const GBDecismals = GB < 100 ? 2 : 1;
+    return roundToDecimals(GB, GBDecismals) + " GB";
 }
 
 // UTILITIES

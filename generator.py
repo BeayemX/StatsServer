@@ -52,9 +52,11 @@ def get_values_for_label(category, label, last_server_sync_timestamp):
 
 def gather_data():
     data = {}
-    #add_sinus_entries(data) # Testing
+
+    # add_sinus_entries(data) # Testing
     # add_random_entries(data) # Testing
     # add_linear_entries(data) # Testing
+
     add_cpu_entries(data)
     add_load_entries(data)
     add_temperature_entries(data)
@@ -64,125 +66,125 @@ def gather_data():
 
     return data
 
-def create_category(unit, min_value, max_value):
-    # FIXME when changing something here, code must also be adjusted
-    # in server.py
-    # just before sending to server, every entry is duplicated by hand...
+def create_category(*settings):
     return {
+        "entries": {},
+        "settings": settings,
+    }
+
+def create_category_entry(value, unit="", min=0, max=100):
+    return {
+        "value": value,
         "unit": unit,
-        "min": min_value,
-        "max": max_value,
-        "settings": []
+        "min": min,
+        "max": max
     }
 
 def add_sinus_entries(data):
-    category = create_category("", -1.5, 1.5)
+    category = create_category()
 
     curr_time = time.time()
 
-    entries = {}
-    entries["Sine1"] = math.sin(curr_time)
-    entries["Sine3"] = math.sin(curr_time / 3.0)
-    entries["Sine10"] = math.sin(curr_time / 10.0)
+    for speed in [1.0, 3.0, 10.0]:
+        value = math.sin(curr_time / speed)
+        entry = create_category_entry(value, "", -1.5, 1.5)
+        category["entries"][f"Sine{int(speed)}"] = entry
 
-    category["entries"] = entries
     data["Test values"] = category
 
 def add_random_entries(data):
-    category = create_category("", -0.5, 1.5)
+    category = create_category()
 
-    entries = {}
     for i in range(8):
         rand_value = 1
         for j in range(i):
              rand_value *= random.random()
-        entries[f"Random{i}"] = rand_value
 
-    category["entries"] = entries
+        entry = create_category_entry(rand_value, "", -0.5, 1.5)
+        category["entries"][f"Random{i}"] = entry
+
     data["Random values"] = category
 
 def add_linear_entries(data):
-    category = create_category("", 0, 100)
-    entries = {}
-    """
+    category = create_category()
 
-    for i in range(8):
-        rand_value = 1
-        for j in range(i):
-             rand_value *= random.random()
-        entries[f"Random{i}"] = rand_value
-    """
     now = datetime.datetime.now()
-    entries["Hours"] = now.hour / 24.0 * 100
-    entries["Minutes"] = now.minute / 60.0 * 100
-    entries["Seconds"] = now.second / 60.0 * 100
 
-    category["entries"] = entries
-    data["Percent time"] = category
+    # Hour
+    entry = create_category_entry(now.hour, "h", 0, 24)
+    category["entries"]["Hours"] = entry
+
+    # Minute
+    entry = create_category_entry(now.minute, "m", 0, 60)
+    category["entries"]["Minutes"] = entry
+
+    # Second
+    entry = create_category_entry(now.second, "m", 0, 60)
+    category["entries"]["Seconds"] = entry
+
+    data["Time"] = category
 
 def add_load_entries(data):
-    category = create_category("", 0, psutil.cpu_count())
+    category = create_category()
 
-    entries = {}
-    entries["Load"] = os.getloadavg()[0]
+    entry = create_category_entry(os.getloadavg()[0], "", 0, psutil.cpu_count())
+    category["entries"]["Load"] = entry
 
-    category["entries"] = entries
     data["load"] = category
 
 def add_cpu_entries(data):
-    category = create_category(" %", 0, 100)
-
-    entries = {}
+    category = create_category()
 
     cpus = psutil.cpu_percent(percpu = True)
     counter = 0
     for cpu_load in cpus:
-        entries[f"CPU{counter}"] = cpu_load
+        entry = create_category_entry(cpu_load, " %", 0, 100)
+        category["entries"][f"CPU{counter}"] = entry
         counter +=1
 
-    category["entries"] = entries
     data["processors"] = category
 
 def add_temperature_entries(data):
-    category = create_category("°C", 35, 100)
+    category = create_category()
 
-    entries = {}
     for name, temps in psutil.sensors_temperatures().items():
-        for entry in temps:
-            label = entry.label
+        for entry_name in temps:
+            label = entry_name.label
             if not label:
                 label = name
-            entries[label] = entry.current
 
-    category["entries"] = entries
+            entry = create_category_entry(entry_name.current, "°C", 35, 100)
+            category["entries"][label] = entry
+
     data["temperatures"] = category
 
 def add_memory_entries(data):
-    category = create_category(" %", 0, 100)
+    category = create_category()
 
-    entries = {}
-    entries["RAM"] = psutil.virtual_memory().percent
-    entries["Swap"] = psutil.swap_memory().percent
+    # RAM
+    entry = create_category_entry(psutil.virtual_memory().used, "byte", 0, psutil.virtual_memory().total)
+    category["entries"]["RAM"] = entry
 
-    category["entries"] = entries
+    # Swap
+    entry = create_category_entry(psutil.swap_memory().used, "byte", 0, psutil.swap_memory().total)
+    category["entries"]["Swap"] = entry
+
     data["memory"] = category
 
 def add_disk_entries(data):
-    category = create_category(" %", 0, 100) # use psutil.disk_usage('/home/').total?
-    category["settings"].append("nograph")
+    category = create_category("nograph") # use psutil.disk_usage('/home/').total?
 
-    entries = {}
-    entries["Disk"] = psutil.disk_usage('/').percent
-    entries["DB Directory"] = psutil.disk_usage(DB_DIR).percent
+    for name, path in [("Disk", "/"), ("DB Directory", DB_DIR)]:
+        entry = create_category_entry(psutil.disk_usage(path).used, "byte", 0, psutil.disk_usage(path).total)
+        category["entries"][name] = entry
 
-    category["entries"] = entries
     data["storage"] = category
 
 def add_network_entries(data):
     global sent_byte
     global received_byte
 
-    category = create_category(" MB", 0, MAX_NETWORK_SPEED)
+    category = create_category()
 
     #nics = psutil.net_if_stats()
     #for nic in nics:
@@ -207,11 +209,14 @@ def add_network_entries(data):
     sent_byte = new_sent
     received_byte = new_received
 
-    entries = {}
-    entries["Sent"] = delta_sent
-    entries["Received"] = delta_received
+    # Sent value
+    entry = create_category_entry(delta_sent, " MB", 0, MAX_NETWORK_SPEED / 3.0)
+    category["entries"]["Sent"] = entry
 
-    category["entries"] = entries
+    # Received value
+    entry = create_category_entry(delta_received, " MB", 0, MAX_NETWORK_SPEED)
+    category["entries"]["Received"] = entry
+
     data["Network"] = category
 
 
@@ -234,7 +239,7 @@ if __name__ == "__main__":
             data = gather_data()
             for category, category_data in data.items():
                 for label, value in category_data["entries"].items():
-                    add_database_entry(cursor, category, label, value)
+                    add_database_entry(cursor, category, label, value["value"])
 
             end_time = time.time()
 
