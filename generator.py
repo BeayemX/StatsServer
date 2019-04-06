@@ -198,23 +198,23 @@ def add_network_entries(data):
     delta_received = new_received - received_byte
 
     # Convert to MB
-    delta_sent /= 1024 * 1024
-    delta_received /= 1024 * 1024
+    #delta_sent /= 1024 * 1024
+    #delta_received /= 1024 * 1024
 
     # Round to 3 decimals
-    delta_sent = round(delta_sent * 1000) / 1000
-    delta_received = round(delta_received * 1000) / 1000
+    #delta_sent = round(delta_sent * 1000) / 1000
+    #delta_received = round(delta_received * 1000) / 1000
 
     # Store current network stats
     sent_byte = new_sent
     received_byte = new_received
 
     # Sent value
-    entry = create_category_entry(delta_sent, " MB", 0, MAX_NETWORK_SPEED / 3.0)
+    entry = create_category_entry(delta_sent, "byte", 0, MAX_NETWORK_SPEED / 3) # intended int-division
     category["entries"]["Sent"] = entry
 
     # Received value
-    entry = create_category_entry(delta_received, " MB", 0, MAX_NETWORK_SPEED)
+    entry = create_category_entry(delta_received, "byte", 0, MAX_NETWORK_SPEED)
     category["entries"]["Received"] = entry
 
     data["Network"] = category
