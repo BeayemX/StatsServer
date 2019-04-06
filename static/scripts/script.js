@@ -177,10 +177,10 @@ function handleDataUpdate(data_json_s) {
         let categories = newServerData["categories"];
         for (let categoryName in categories)
         {
-            let category_data = categories[categoryName];
-            for (let entryName in category_data["entries"])
+            let categoryData = categories[categoryName];
+            for (let entryName in categoryData["entries"])
             {
-                let entryData = category_data["entries"][entryName];
+                let entryData = categoryData["entries"][entryName];
                 cachedData["categories"][categoryName]["entries"][entryName]["values"] = cachedData["categories"][categoryName]["entries"][entryName]["values"].concat(entryData["values"]);
             }
         }
@@ -191,10 +191,10 @@ function handleDataUpdate(data_json_s) {
         elements = {};
         let categories = newServerData["categories"];
         for (let category in categories) {
-            let category_data = categories[category];
+            let categoryData = categories[category];
             console.log(category);
-            console.log(category_data);
-            _generateEntry(category, Object.keys(category_data["entries"]), category_data);
+            console.log(categoryData);
+            _generateEntry(category, Object.keys(categoryData["entries"]), categoryData);
         }
     }
 
@@ -212,9 +212,9 @@ function _updateGraphs() {
     // Actual drawing
     for (let categoryName in elements) {
 
-        let category_data = cachedData["categories"][categoryName]
-        _updateBars(category_data, categoryName);
-        _updateCanvas(category_data, elements[categoryName]["canvas"]);
+        let categoryData = cachedData["categories"][categoryName]
+        _updateBars(categoryData, categoryName);
+        _updateCanvas(categoryData, elements[categoryName]["canvas"]);
     }
 }
 
@@ -251,11 +251,9 @@ function _getValueAtCursor(categoryData, key) {
 }
 
 function _updateBars(categoryData, categoryName) {
-    let colorCounter = 0;
 
     for (const key of Object.keys(categoryData["entries"])) {
-        let color = availableColors[colorCounter % availableColors.length];
-        colorCounter += 1;
+        let color = categoryData["settings"].includes("monochrome") ? getColor(0): getNextColor();
 
         // Label
         elements[categoryName][key]["label"].innerText = key;
@@ -308,6 +306,7 @@ function _updateBars(categoryData, categoryName) {
 
         ctx.setLineDash([]);
     }
+    resetColors();
 }
 
 function _timestampToTime(timestamp) {
@@ -411,11 +410,11 @@ function _prepareData(values) {
     return newArray;
 }
 
-function _updateCanvas(category_data, canvas) {
-    if (category_data["settings"].includes("nograph"))
+function _updateCanvas(categoryData, canvas) {
+    if (categoryData["settings"].includes("nograph"))
         return;
 
-    let keys = Object.keys(category_data["entries"])
+    let keys = Object.keys(categoryData["entries"])
     let ctx = canvas.getContext("2d");
 
     // TODO why do this on update, wouldnt it be sufficient to do it when creating?
@@ -429,7 +428,7 @@ function _updateCanvas(category_data, canvas) {
     let timeStampConsideringServerDelay = 0;
 
     for (const key of keys) {
-        const allValues = category_data["entries"][key]["values"];
+        const allValues = categoryData["entries"][key]["values"];
         timeStampConsideringServerDelay = Math.max(timeStampConsideringServerDelay, allValues[allValues.length -1][0])
     }
 
@@ -455,8 +454,8 @@ function _updateCanvas(category_data, canvas) {
     ctx.beginPath();
 
     // Horizontal lines
-    //const min = category_data["entries"][key]["min"];
-    //const max = category_data["entries"][key]["max"];
+    //const min = categoryData["entries"][key]["min"];
+    //const max = categoryData["entries"][key]["max"];
     //const y = _getY(min, max, (min + max) / 2);
     ctx.moveTo(0, height * 0.25);
     ctx.lineTo(width, height * 0.25);
@@ -511,19 +510,15 @@ function _updateCanvas(category_data, canvas) {
     ctx.stroke();
 
     // Create graph lines
-    colorCounter = 0;
     for (const key of keys) {
-        // find color
-        let color = availableColors[colorCounter % availableColors.length];
-        colorCounter += 1;
-
-        let allValues = _getValuesForVisibleTimeRange(category_data, key);
+        let allValues = _getValuesForVisibleTimeRange(categoryData, key);
+        let color = categoryData["settings"].includes("monochrome") ? getColor(0): getNextColor();
 
         // Draw graph
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(_getX(allValues[0][0]), _getY(category_data["entries"][key]["min"], category_data["entries"][key]["max"], allValues[0][1]));
+        ctx.moveTo(_getX(allValues[0][0]), _getY(categoryData["entries"][key]["min"], categoryData["entries"][key]["max"], allValues[0][1]));
 
         for (let i=1; i<allValues.length; ++i)
         {
@@ -533,14 +528,15 @@ function _updateCanvas(category_data, canvas) {
 
             ctx.lineTo(
                 _getX(timestamp),
-                _getY(category_data["entries"][key]["min"], category_data["entries"][key]["max"], actualValue)
+                _getY(categoryData["entries"][key]["min"], categoryData["entries"][key]["max"], actualValue)
             );
         }
         ctx.stroke();
     }
+    resetColors();
 
     // Draw global limits
-    if (category_data["settings"].includes("draw_global_limits") || category_data["settings"].includes("draw_global_limit_min") || category_data["settings"].includes("draw_global_limit_max")) {
+    if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_min") || categoryData["settings"].includes("draw_global_limit_max")) {
 
         let minValue = Infinity;
         let maxValue = -Infinity;
@@ -549,7 +545,7 @@ function _updateCanvas(category_data, canvas) {
 
         // find min / max values
         for (const key of keys) {
-            let allValues = _getValuesForVisibleTimeRange(category_data, key);
+            let allValues = _getValuesForVisibleTimeRange(categoryData, key);
 
             for (let i = 1; i < allValues.length; ++i)
             {
@@ -562,27 +558,25 @@ function _updateCanvas(category_data, canvas) {
         }
         avg /= avgCounter;
 
-        if (category_data["settings"].includes("draw_global_limits") || category_data["settings"].includes("draw_global_limit_min"))
-            _drawLimit(minValue, category_data["min"], category_data["max"], category_data["unit"], "#ddd");
-        if (category_data["settings"].includes("draw_global_limits") || category_data["settings"].includes("draw_global_limit_max"))
-            _drawLimit(maxValue, category_data["min"], category_data["max"], category_data["unit"], "#ddd");
+        if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_min"))
+            _drawLimit(minValue, categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd");
+        if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_max"))
+            _drawLimit(maxValue, categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd");
     }
-    if (category_data["settings"].includes("draw_outer_limits") || category_data["settings"].includes("draw_outer_limit_min")) {
-        _drawLimit(category_data["min"], category_data["min"], category_data["max"], category_data["unit"], "#ddd", false);
+    if (categoryData["settings"].includes("draw_outer_limits") || categoryData["settings"].includes("draw_outer_limit_min")) {
+        _drawLimit(categoryData["min"], categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd", false);
     }
-    if (category_data["settings"].includes("draw_outer_limits") || category_data["settings"].includes("draw_outer_limit_max")) {
-        _drawLimit(category_data["max"], category_data["min"], category_data["max"], category_data["unit"], "#ddd", false);
+    if (categoryData["settings"].includes("draw_outer_limits") || categoryData["settings"].includes("draw_outer_limit_max")) {
+        _drawLimit(categoryData["max"], categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd", false);
     }
 
     // Draw individual limits
-    colorCounter = 0;
+
     for (const key of keys) {
-        let color = availableColors[colorCounter % availableColors.length];
-        colorCounter += 1;
+        let allValues = _getValuesForVisibleTimeRange(categoryData, key);
+        let color = categoryData["settings"].includes("monochrome") ? getColor(0): getNextColor();
 
-        let allValues = _getValuesForVisibleTimeRange(category_data, key);
-
-        if (category_data["settings"].includes("draw_individual_limits") || category_data["settings"].includes("draw_individual_limit_min") || category_data["settings"].includes("draw_individual_limit_max")){
+        if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min") || categoryData["settings"].includes("draw_individual_limit_max")){
             let minValue = Infinity;
             let maxValue = -Infinity;
             let avg = 0;
@@ -600,13 +594,14 @@ function _updateCanvas(category_data, canvas) {
             avg /= avgCounter;
 
             // Draw limits
-            if (category_data["settings"].includes("draw_individual_limits") || category_data["settings"].includes("draw_individual_limit_min"))
-                _drawLimit(minValue, category_data["entries"][key]["min"], category_data["entries"][key]["max"], category_data["entries"][key]["unit"], color);
-            if (category_data["settings"].includes("draw_individual_limits") || category_data["settings"].includes("draw_individual_limit_max"))
-                _drawLimit(maxValue, category_data["entries"][key]["min"], category_data["entries"][key]["max"], category_data["entries"][key]["unit"], color);
+            if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min"))
+                _drawLimit(minValue, categoryData["entries"][key]["min"], categoryData["entries"][key]["max"], categoryData["entries"][key]["unit"], color);
+            if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_max"))
+                _drawLimit(maxValue, categoryData["entries"][key]["min"], categoryData["entries"][key]["max"], categoryData["entries"][key]["unit"], color);
             // _drawLimit(avg, key, color, true, "Average: ");
         }
     }
+    resetColors();
 
     function _drawLimit(value, min, max, unit, color, drawLine=true, label="") {
         let limitY = _getY(min, max, value);
@@ -654,7 +649,7 @@ function _updateCanvas(category_data, canvas) {
     // FIXME key is not needed here
     let cursorTimeSnapped;
     for (const key of keys) {
-        cursorTimeSnapped = _getValueAtCursor(category_data, key)[0];
+        cursorTimeSnapped = _getValueAtCursor(categoryData, key)[0];
         // Should not 'break' if values would be written to DB in different time steps
         // But would need to find closest match
         break;
@@ -694,7 +689,7 @@ function _updateCanvas(category_data, canvas) {
     ctx.fillText(text, fontPosX, fontPosY);
 }
 
-function _generateEntry(category, keys, category_data) {
+function _generateEntry(category, keys, categoryData) {
     categoryElements = {};
 
     // Create text table rows
@@ -715,15 +710,13 @@ function _generateEntry(category, keys, category_data) {
     graphWrapper.appendChild(tr);
 
     // Create rows
-    let colorCounter = 0;
     for (const key of keys)
     {
         let rowElement = {};
-        let color = availableColors[colorCounter % availableColors.length];
+        let color = categoryData["settings"].includes("monochrome") ? getColor(0): getNextColor();
 
         // Only use different colors if there is a graph
-        // if (!category_data["settings"].includes("nograph"))
-        colorCounter += 1;
+        // if (!categoryData["settings"].includes("nograph"))
 
         tr = document.createElement("div");
         att = document.createAttribute("class");
@@ -781,10 +774,12 @@ function _generateEntry(category, keys, category_data) {
 
         categoryElements[key] = rowElement;
     }
+    resetColors();
+
 
     // do once
     // create canvas
-    if (!category_data["settings"].includes("nograph"))
+    if (!categoryData["settings"].includes("nograph"))
     {
         tr = document.createElement("tr");
         att = document.createAttribute("class");
@@ -882,9 +877,9 @@ function _updateOldestTimeStamp() {
 
     for (let categoryName in categories)
     {
-        const category_data = categories[categoryName];
-        for (let entryName in category_data["entries"]) {
-            const allValues = category_data["entries"][entryName]["values"];
+        const categoryData = categories[categoryName];
+        for (let entryName in categoryData["entries"]) {
+            const allValues = categoryData["entries"][entryName]["values"];
             tmpOldestTimestamp = Math.min(tmpOldestTimestamp, allValues[0][0])
         }
     }
@@ -1192,4 +1187,21 @@ function _humanizeTime(sec) {
     }
 
     return text;
+}
+
+let colorCounter = 0;
+
+function getColor(idx) {
+    return availableColors[idx % availableColors.length];
+}
+
+function getNextColor() {
+    const color = availableColors[colorCounter % availableColors.length];
+    ++colorCounter;
+
+    return color;
+}
+
+function resetColors() {
+    colorCounter = 0;
 }
