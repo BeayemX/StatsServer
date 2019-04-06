@@ -510,7 +510,7 @@ function _updateCanvas(category_data, canvas) {
 
     ctx.stroke();
 
-    // Create lines in graph
+    // Create graph lines
     colorCounter = 0;
     for (const key of keys) {
         // find color
@@ -537,32 +537,9 @@ function _updateCanvas(category_data, canvas) {
             );
         }
         ctx.stroke();
-
-        // Calculate and draw limits
-        if (category_data["settings"].includes("draw_individual_limits")){
-            let minValue = Infinity;
-            let maxValue = -Infinity;
-            let avg = 0;
-            let avgCounter = 0;
-
-            // find min / max values
-            for (let i = 1; i < allValues.length; ++i)
-            {
-                let actualValue = allValues[i][1];
-                maxValue = Math.max(maxValue, actualValue);
-                minValue = Math.min(minValue, actualValue);
-                avg += actualValue;
-                ++avgCounter;
-            }
-            avg /= avgCounter;
-
-            // Draw limits
-            // _drawLimit(minValue, key, color);
-            _drawLimit(maxValue, category_data["entries"][key]["min"], category_data["entries"][key]["max"], category_data["entries"][key]["unit"], color);
-            // _drawLimit(avg, key, color, true, "Average: ");
-        }
     }
 
+    // Draw global limits
     if (category_data["settings"].includes("draw_global_limits") || category_data["settings"].includes("draw_global_limit_min") || category_data["settings"].includes("draw_global_limit_max")) {
 
         let minValue = Infinity;
@@ -589,6 +566,46 @@ function _updateCanvas(category_data, canvas) {
             _drawLimit(minValue, category_data["min"], category_data["max"], category_data["unit"], "#ddd");
         if (category_data["settings"].includes("draw_global_limits") || category_data["settings"].includes("draw_global_limit_max"))
             _drawLimit(maxValue, category_data["min"], category_data["max"], category_data["unit"], "#ddd");
+    }
+    if (category_data["settings"].includes("draw_outer_limits") || category_data["settings"].includes("draw_outer_limit_min")) {
+        _drawLimit(category_data["min"], category_data["min"], category_data["max"], category_data["unit"], "#ddd", false);
+    }
+    if (category_data["settings"].includes("draw_outer_limits") || category_data["settings"].includes("draw_outer_limit_max")) {
+        _drawLimit(category_data["max"], category_data["min"], category_data["max"], category_data["unit"], "#ddd", false);
+    }
+
+    // Draw individual limits
+    colorCounter = 0;
+    for (const key of keys) {
+        let color = availableColors[colorCounter % availableColors.length];
+        colorCounter += 1;
+
+        let allValues = _getValuesForVisibleTimeRange(category_data, key);
+
+        if (category_data["settings"].includes("draw_individual_limits") || category_data["settings"].includes("draw_individual_limit_min") || category_data["settings"].includes("draw_individual_limit_max")){
+            let minValue = Infinity;
+            let maxValue = -Infinity;
+            let avg = 0;
+            let avgCounter = 0;
+
+            // find min / max values
+            for (let i = 1; i < allValues.length; ++i)
+            {
+                let actualValue = allValues[i][1];
+                maxValue = Math.max(maxValue, actualValue);
+                minValue = Math.min(minValue, actualValue);
+                avg += actualValue;
+                ++avgCounter;
+            }
+            avg /= avgCounter;
+
+            // Draw limits
+            if (category_data["settings"].includes("draw_individual_limits") || category_data["settings"].includes("draw_individual_limit_min"))
+                _drawLimit(minValue, category_data["entries"][key]["min"], category_data["entries"][key]["max"], category_data["entries"][key]["unit"], color);
+            if (category_data["settings"].includes("draw_individual_limits") || category_data["settings"].includes("draw_individual_limit_max"))
+                _drawLimit(maxValue, category_data["entries"][key]["min"], category_data["entries"][key]["max"], category_data["entries"][key]["unit"], color);
+            // _drawLimit(avg, key, color, true, "Average: ");
+        }
     }
 
     function _drawLimit(value, min, max, unit, color, drawLine=true, label="") {

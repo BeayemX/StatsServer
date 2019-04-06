@@ -125,9 +125,15 @@ def add_linear_entries(data):
     data["Time"] = category
 
 def add_load_entries(data):
-    category = create_category("draw_individual_limits")
+    category = create_category("draw_individual_limits", "draw_outer_limit_min", "draw_outer_limit_max")
 
-    entry = create_category_entry(os.getloadavg()[0], "", 0, psutil.cpu_count())
+    max_value = psutil.cpu_count()
+
+    category["min"] = 0
+    category["max"] = max_value
+    category["unit"] = ""
+
+    entry = create_category_entry(os.getloadavg()[0], "", 0, max_value)
     category["entries"]["Load"] = entry
 
     data["load"] = category
@@ -190,7 +196,7 @@ def add_network_entries(data):
     global sent_byte
     global received_byte
 
-    category = create_category("draw_individual_limits")
+    category = create_category("draw_individual_limit_max")
 
     #nics = psutil.net_if_stats()
     #for nic in nics:
