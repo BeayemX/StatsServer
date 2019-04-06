@@ -17,7 +17,7 @@ DB_DIR = conf["Generator"]["DatabaseDirectory"]
 DB_FILE = os.path.join(DB_DIR, conf["Generator"]["DatabaseName"])
 TIME_STEP = conf["Generator"].getfloat("Timestep")
 MAX_AGE = conf["Generator"].getfloat("MaxAge") # in seconds
-MAX_NETWORK_SPEED = conf["Generator"].getfloat("MaxNetworkSpeed") # in MByte
+MAX_NETWORK_SPEED = conf["Generator"].getfloat("MaxNetworkSpeed") # in Byte
 MAX_NETWORK_SPEED *= TIME_STEP
 
 # Network variables
@@ -210,7 +210,7 @@ def add_network_entries(data):
     received_byte = new_received
 
     # Sent value
-    entry = create_category_entry(delta_sent, "byte", 0, MAX_NETWORK_SPEED / 3) # intended int-division
+    entry = create_category_entry(delta_sent, "byte", 0, MAX_NETWORK_SPEED / 3)
     category["entries"]["Sent"] = entry
 
     # Received value
