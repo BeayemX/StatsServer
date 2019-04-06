@@ -197,14 +197,6 @@ def add_network_entries(data):
     delta_sent = new_sent - sent_byte
     delta_received = new_received - received_byte
 
-    # Convert to MB
-    #delta_sent /= 1024 * 1024
-    #delta_received /= 1024 * 1024
-
-    # Round to 3 decimals
-    #delta_sent = round(delta_sent * 1000) / 1000
-    #delta_received = round(delta_received * 1000) / 1000
-
     # Store current network stats
     sent_byte = new_sent
     received_byte = new_received
