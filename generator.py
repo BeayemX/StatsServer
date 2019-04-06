@@ -85,7 +85,7 @@ def add_sinus_entries(data):
 
     curr_time = time.time()
 
-    for speed in [1.0, 3.0, 10.0]:
+    for speed in [1.0, 3.0, 10.0, 60.0, 60.0 * 10]:
         value = math.sin(curr_time / speed)
         entry = create_category_entry(value, "", -1.5, 1.5)
         category["entries"][f"Sine{int(speed)}"] = entry
@@ -125,7 +125,7 @@ def add_linear_entries(data):
     data["Time"] = category
 
 def add_load_entries(data):
-    category = create_category()
+    category = create_category("draw_individual_limits")
 
     entry = create_category_entry(os.getloadavg()[0], "", 0, psutil.cpu_count())
     category["entries"]["Load"] = entry
@@ -133,7 +133,10 @@ def add_load_entries(data):
     data["load"] = category
 
 def add_cpu_entries(data):
-    category = create_category()
+    category = create_category("draw_global_limit_max")
+    category["min"] = 0
+    category["max"] = 100
+    category["unit"] = " %"
 
     cpus = psutil.cpu_percent(percpu = True)
     counter = 0
@@ -145,7 +148,10 @@ def add_cpu_entries(data):
     data["processors"] = category
 
 def add_temperature_entries(data):
-    category = create_category()
+    category = create_category("draw_global_limit_min", "draw_global_limit_max")
+    category["min"] = 35
+    category["max"] = 100
+    category["unit"] = "°C"
 
     for name, temps in psutil.sensors_temperatures().items():
         for entry_name in temps:
@@ -159,7 +165,7 @@ def add_temperature_entries(data):
     data["temperatures"] = category
 
 def add_memory_entries(data):
-    category = create_category()
+    category = create_category("draw_individual_limits")
 
     # RAM
     entry = create_category_entry(psutil.virtual_memory().used, "byte", 0, psutil.virtual_memory().total)
@@ -184,7 +190,7 @@ def add_network_entries(data):
     global sent_byte
     global received_byte
 
-    category = create_category()
+    category = create_category("draw_individual_limits")
 
     #nics = psutil.net_if_stats()
     #for nic in nics:

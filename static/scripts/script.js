@@ -426,27 +426,6 @@ function _updateCanvas(category_data, canvas) {
     canvas.width = width;
     canvas.height = height;
 
-    // find highest value
-    let minValue = Infinity;
-    let maxValue = -Infinity;
-    let avg = 0;
-    let avgCounter = 0;
-
-    for (const key of keys) {
-        let allValues = _getValuesForVisibleTimeRange(category_data, key);
-
-        // find minValue and maxValue
-        for (let i=1; i<allValues.length; ++i)
-        {
-            let actualValue = allValues[i][1];
-            maxValue = Math.max(maxValue, actualValue);
-            minValue = Math.min(minValue, actualValue);
-            avg += actualValue;
-            ++avgCounter;
-        }
-    }
-    avg /= avgCounter;
-
     let timeStampConsideringServerDelay = 0;
 
     for (const key of keys) {
@@ -519,14 +498,14 @@ function _updateCanvas(category_data, canvas) {
     else if (timerange <= 60*60*24) _drawSeparators(60*60);
 
     else {
-            ctx.moveTo(width * 0.25, 0);
-            ctx.lineTo(width * 0.25, height);
+        ctx.moveTo(width * 0.25, 0);
+        ctx.lineTo(width * 0.25, height);
 
-            ctx.moveTo(width * 0.5, 0);
-            ctx.lineTo(width * 0.5, height);
+        ctx.moveTo(width * 0.5, 0);
+        ctx.lineTo(width * 0.5, height);
 
-            ctx.moveTo(width * 0.75, 0);
-            ctx.lineTo(width * 0.75, height);
+        ctx.moveTo(width * 0.75, 0);
+        ctx.lineTo(width * 0.75, height);
     }
 
     ctx.stroke();
@@ -534,12 +513,13 @@ function _updateCanvas(category_data, canvas) {
     // Create lines in graph
     colorCounter = 0;
     for (const key of keys) {
+        // find color
         let color = availableColors[colorCounter % availableColors.length];
-
         colorCounter += 1;
 
         let allValues = _getValuesForVisibleTimeRange(category_data, key);
 
+        // Draw graph
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -557,14 +537,66 @@ function _updateCanvas(category_data, canvas) {
             );
         }
         ctx.stroke();
+
+        // Calculate and draw limits
+        if (category_data["settings"].includes("draw_individual_limits")){
+            let minValue = Infinity;
+            let maxValue = -Infinity;
+            let avg = 0;
+            let avgCounter = 0;
+
+            // find min / max values
+            for (let i = 1; i < allValues.length; ++i)
+            {
+                let actualValue = allValues[i][1];
+                maxValue = Math.max(maxValue, actualValue);
+                minValue = Math.min(minValue, actualValue);
+                avg += actualValue;
+                ++avgCounter;
+            }
+            avg /= avgCounter;
+
+            // Draw limits
+            // _drawLimit(minValue, key, color);
+            _drawLimit(maxValue, category_data["entries"][key]["min"], category_data["entries"][key]["max"], category_data["entries"][key]["unit"], color);
+            // _drawLimit(avg, key, color, true, "Average: ");
+        }
     }
 
-    function _drawLimit(value, drawLine=true, label="") {
-        let limitY = _getY(category_data["entries"][key]["min"], category_data["entries"][key]["max"], value);
+    if (category_data["settings"].includes("draw_global_limits") || category_data["settings"].includes("draw_global_limit_min") || category_data["settings"].includes("draw_global_limit_max")) {
+
+        let minValue = Infinity;
+        let maxValue = -Infinity;
+        let avg = 0;
+        let avgCounter = 0;
+
+        // find min / max values
+        for (const key of keys) {
+            let allValues = _getValuesForVisibleTimeRange(category_data, key);
+
+            for (let i = 1; i < allValues.length; ++i)
+            {
+                let actualValue = allValues[i][1];
+                maxValue = Math.max(maxValue, actualValue);
+                minValue = Math.min(minValue, actualValue);
+                avg += actualValue;
+                ++avgCounter;
+            }
+        }
+        avg /= avgCounter;
+
+        if (category_data["settings"].includes("draw_global_limits") || category_data["settings"].includes("draw_global_limit_min"))
+            _drawLimit(minValue, category_data["min"], category_data["max"], category_data["unit"], "#ddd");
+        if (category_data["settings"].includes("draw_global_limits") || category_data["settings"].includes("draw_global_limit_max"))
+            _drawLimit(maxValue, category_data["min"], category_data["max"], category_data["unit"], "#ddd");
+    }
+
+    function _drawLimit(value, min, max, unit, color, drawLine=true, label="") {
+        let limitY = _getY(min, max, value);
 
         // Draw line
         if (drawLine) {
-            ctx.strokeStyle = "#fff";
+            ctx.strokeStyle = color;
             ctx.lineWidth = 1;
             ctx.setLineDash([15, 15]);
 
@@ -576,7 +608,13 @@ function _updateCanvas(category_data, canvas) {
         }
 
         // Draw text
-        let text = Math.round(value*100)/100 + category_data["entries"][key]["unit"]
+        let text = "";
+        if (unit == "byte") {
+            text = humanizeBytes(value);
+        } else {
+            text = Math.round(value * 100) / 100 + unit;
+        }
+
         let fontSize = 36;
         let fontOffset = fontSize * 0.5;
         let fontPosY = limitY + fontOffset;
@@ -587,19 +625,9 @@ function _updateCanvas(category_data, canvas) {
         ctx.strokeStyle = "#333";
         ctx.lineWidth = 12;
         ctx.strokeText(label + text, 10, fontPosY);
-        ctx.fillStyle = "#ddd";
+        ctx.fillStyle = color; // "#ddd";
         ctx.fillText(label + text, 10, fontPosY);
     }
-    /*
-    if (category_data["min"])
-        _drawLimit(category_data["min"], false);
-    if (category_data["max"])
-        _drawLimit(category_data["max"], false);
-
-    _drawLimit(minValue);
-    _drawLimit(maxValue);
-    // _drawLimit(avg, true, "Average: ");
-   */
 
     // Draw cursor
     ctx.strokeStyle = "#0f0";
