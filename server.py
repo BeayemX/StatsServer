@@ -60,13 +60,13 @@ def get_data_as_json(last_server_sync_timestamp):
     # Create JSON to calculate size
     return_json = json.dumps(data)
 
-    # Add size-information to data-object
-    data["size"] = sys.getsizeof(return_json)
+    size = sys.getsizeof(return_json)
 
-    # Recreate JSON from data-object with added 'size'-information
-    return_json = json.dumps(data)
+    return_json = return_json.rstrip('}') # open json
+    return_json +=', "size": ' + str(size) # add size information
+    return_json += '}' # close json
 
-    print("Transferring: ", round(sys.getsizeof(return_json) / 1024 / 1024 * 1000) / 1000, "MB")
+    print("Transferring: ", round(size / 1024 / 1024 * 1000) / 1000, "MB")
 
     return return_json
 
