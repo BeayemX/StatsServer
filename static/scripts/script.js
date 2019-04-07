@@ -172,9 +172,11 @@ function handleDataUpdate(data_json_s) {
     timeDisplay.innerText =  `Last update: ${_timestampToTime(last_server_sync_timestamp)}`;
 
     // Store data on client
-    if (cachedData == null)
-        cachedData = newServerData
-    else {
+    if (cachedData == null) // Just started the app, cache new data
+    {
+        cachedData = newServerData;
+
+        // Add current value to values
         let categories = newServerData["categories"];
         for (let categoryName in categories)
         {
@@ -182,7 +184,22 @@ function handleDataUpdate(data_json_s) {
             for (let entryName in categoryData["entries"])
             {
                 let entryData = categoryData["entries"][entryName];
-                cachedData["categories"][categoryName]["entries"][entryName]["values"] = cachedData["categories"][categoryName]["entries"][entryName]["values"].concat(entryData["values"]);
+                cachedData["categories"][categoryName]["entries"][entryName]["values"].push([last_server_sync_timestamp, entryData["value"]]); // add current value to values
+            }
+        }
+    } else { // add new values to cached data
+        let categories = newServerData["categories"];
+        for (let categoryName in categories)
+        {
+            let categoryData = categories[categoryName];
+            for (let entryName in categoryData["entries"])
+            {
+                let entryData = categoryData["entries"][entryName];
+                cachedData["categories"][categoryName]["entries"][entryName]["value"] = entryData["value"];
+
+                cachedData["categories"][categoryName]["entries"][entryName]["values"].pop(); // remove ["value"] previously added
+                cachedData["categories"][categoryName]["entries"][entryName]["values"] = cachedData["categories"][categoryName]["entries"][entryName]["values"].concat(entryData["values"]); // add new value-list to cached value-list
+                cachedData["categories"][categoryName]["entries"][entryName]["values"].push([last_server_sync_timestamp, entryData["value"]]); // add current value to values
             }
         }
     }
@@ -439,20 +456,44 @@ function _updateCanvas(categoryName, categoryData, canvas) {
     canvas.width = width;
     canvas.height = height;
 
-    let timeStampConsideringServerDelay = 0;
+    const minMaxValues = {};
+
+    minMaxValues["globalMin"] = Infinity;
+    minMaxValues["globalMax"] = -Infinity;
 
     for (const key of keys) {
-        const allValues = categoryData["entries"][key]["values"];
-        timeStampConsideringServerDelay = Math.max(timeStampConsideringServerDelay, allValues[allValues.length -1][0])
+        let minValue = Infinity;
+        let maxValue = -Infinity;
+        let avg = 0;
+        let avgCounter = 0;
+
+        // find min / max values
+        let allValues = _getValuesForVisibleTimeRange(categoryData, key);
+
+        for (let i = 1; i < allValues.length; ++i)
+        {
+            let actualValue = allValues[i][1];
+            minValue = Math.min(minValue, actualValue);
+            maxValue = Math.max(maxValue, actualValue);
+
+            minMaxValues["globalMin"] = Math.min(minMaxValues["globalMin"], actualValue);
+            minMaxValues["globalMax"] = Math.max(minMaxValues["globalMax"], actualValue);
+
+            avg += actualValue;
+            ++avgCounter;
+        }
+
+        avg /= avgCounter;
+
+        minMaxValues[key] = {};
+        minMaxValues[key]["min"] = minValue;
+        minMaxValues[key]["max"] = maxValue;
+        minMaxValues[key]["avg"] = avg;
     }
 
-    // Avoid gap on the right side due to server delay
-    const serverDelta = last_server_sync_timestamp - timeStampConsideringServerDelay;
-
     function _getX(timestamp) {
-        let diff = rightValueBound - timestamp - serverDelta;
-        let x =  width - diff / _getTimeRange() * width;
-        return x;
+        const diff = rightValueBound - timestamp;
+        return width - diff / _getTimeRange() * width;
     }
 
     function _getY(min, max, value) {
@@ -468,9 +509,6 @@ function _updateCanvas(categoryName, categoryData, canvas) {
     ctx.beginPath();
 
     // Horizontal lines
-    //const min = categoryData["entries"][key]["min"];
-    //const max = categoryData["entries"][key]["max"];
-    //const y = _getY(min, max, (min + max) / 2);
     ctx.moveTo(0, height * 0.25);
     ctx.lineTo(width, height * 0.25);
 
@@ -532,10 +570,13 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         const color = _getElementColor(categoryName, key);
 
         // Draw graph
+        let minValue = categoryData["entries"][key]["min"];
+        let maxValue = categoryData["entries"][key]["max"];
+
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(_getX(allValues[0][0]), _getY(categoryData["entries"][key]["min"], categoryData["entries"][key]["max"], allValues[0][1]));
+        ctx.moveTo(_getX(allValues[0][0]), _getY(minValue, maxValue, allValues[0][1]));
 
         for (let i=1; i<allValues.length; ++i)
         {
@@ -545,7 +586,7 @@ function _updateCanvas(categoryName, categoryData, canvas) {
 
             ctx.lineTo(
                 _getX(timestamp),
-                _getY(categoryData["entries"][key]["min"], categoryData["entries"][key]["max"], actualValue)
+                _getY(minValue, maxValue, actualValue)
             );
         }
         ctx.stroke();
@@ -554,30 +595,10 @@ function _updateCanvas(categoryName, categoryData, canvas) {
     // Draw global limits
     if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_min") || categoryData["settings"].includes("draw_global_limit_max")) {
 
-        let minValue = Infinity;
-        let maxValue = -Infinity;
-        let avg = 0;
-        let avgCounter = 0;
-
-        // find min / max values
-        for (const key of keys) {
-            let allValues = _getValuesForVisibleTimeRange(categoryData, key);
-
-            for (let i = 1; i < allValues.length; ++i)
-            {
-                let actualValue = allValues[i][1];
-                maxValue = Math.max(maxValue, actualValue);
-                minValue = Math.min(minValue, actualValue);
-                avg += actualValue;
-                ++avgCounter;
-            }
-        }
-        avg /= avgCounter;
-
         if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_min"))
-            _drawLimit(minValue, categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd");
+            _drawLimit(minMaxValues["globalMin"], categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd");
         if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_max"))
-            _drawLimit(maxValue, categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd");
+            _drawLimit(minMaxValues["globalMax"], categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd");
     }
     if (categoryData["settings"].includes("draw_outer_limits") || categoryData["settings"].includes("draw_outer_limit_min")) {
         _drawLimit(categoryData["min"], categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd", false);
@@ -593,21 +614,8 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         const color = _getElementColor(categoryName, key);
 
         if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min") || categoryData["settings"].includes("draw_individual_limit_max")){
-            let minValue = Infinity;
-            let maxValue = -Infinity;
-            let avg = 0;
-            let avgCounter = 0;
-
-            // find min / max values
-            for (let i = 1; i < allValues.length; ++i)
-            {
-                let actualValue = allValues[i][1];
-                maxValue = Math.max(maxValue, actualValue);
-                minValue = Math.min(minValue, actualValue);
-                avg += actualValue;
-                ++avgCounter;
-            }
-            avg /= avgCounter;
+            const minValue = minMaxValues[key]["min"];
+            const maxValue = minMaxValues[key]["max"];
 
             // Draw limits
             if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min"))
