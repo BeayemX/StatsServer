@@ -21,6 +21,7 @@ let availableColors = [
 const DEFAULT_AUTO_RELOAD = true;
 const DEFAULT_TIME_RANGE = 60*60;
 const RELOAD_MINIMUM_TIME_MS = 2000;
+const INACTIVE_COLOR = "#777";
 const timeRanges = [60, 60*5, 60*10, 60*30, 60*60, 60*60 * 6, 60*60 * 12, 60*60*24];
 
 // Members
@@ -214,7 +215,7 @@ function _updateGraphs() {
 
         let categoryData = cachedData["categories"][categoryName]
         _updateBars(categoryData, categoryName);
-        _updateCanvas(categoryData, elements[categoryName]["canvas"]);
+        _updateCanvas(categoryName, categoryData, elements[categoryName]["canvas"]);
     }
 }
 
@@ -253,7 +254,7 @@ function _getValueAtCursor(categoryData, key) {
 function _updateBars(categoryData, categoryName) {
 
     for (const key of Object.keys(categoryData["entries"])) {
-        let color = categoryData["settings"].includes("monochrome") ? getColor(0): getNextColor();
+        const color = _getElementColor(categoryName, key);
 
         // Label
         elements[categoryName][key]["label"].innerText = key;
@@ -282,7 +283,9 @@ function _updateBars(categoryData, categoryName) {
         let ctx = canvas.getContext("2d");
         let indicatorSize = 3;
 
-        ctx.strokeStyle = color;
+        let catElement = elements[categoryName][key]
+
+        ctx.strokeStyle = catElement["active"] ? catElement["color"] : color;
         ctx.lineWidth = height;
         ctx.setLineDash([indicatorSize, indicatorSize * 2]);
 
@@ -306,7 +309,6 @@ function _updateBars(categoryData, categoryName) {
 
         ctx.setLineDash([]);
     }
-    resetColors();
 }
 
 function _timestampToTime(timestamp) {
@@ -410,11 +412,23 @@ function _prepareData(values) {
     return newArray;
 }
 
-function _updateCanvas(categoryData, canvas) {
+function _getActiveEntries(categoryName, categoryData) {
+    const activeEntries = [];
+
+    for (const entryName of Object.keys(categoryData["entries"]))
+    {
+        if (elements[categoryName][entryName]["active"])
+            activeEntries.push(entryName);
+    }
+
+    return activeEntries;
+}
+
+function _updateCanvas(categoryName, categoryData, canvas) {
     if (categoryData["settings"].includes("nograph"))
         return;
 
-    let keys = Object.keys(categoryData["entries"])
+    let keys = _getActiveEntries(categoryName, categoryData);
     let ctx = canvas.getContext("2d");
 
     // TODO why do this on update, wouldnt it be sufficient to do it when creating?
@@ -511,8 +525,11 @@ function _updateCanvas(categoryData, canvas) {
 
     // Create graph lines
     for (const key of keys) {
+        if (!elements[categoryName][key]["active"])
+            continue;
+
         let allValues = _getValuesForVisibleTimeRange(categoryData, key);
-        let color = categoryData["settings"].includes("monochrome") ? getColor(0): getNextColor();
+        const color = _getElementColor(categoryName, key);
 
         // Draw graph
         ctx.strokeStyle = color;
@@ -533,7 +550,6 @@ function _updateCanvas(categoryData, canvas) {
         }
         ctx.stroke();
     }
-    resetColors();
 
     // Draw global limits
     if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_min") || categoryData["settings"].includes("draw_global_limit_max")) {
@@ -574,7 +590,7 @@ function _updateCanvas(categoryData, canvas) {
 
     for (const key of keys) {
         let allValues = _getValuesForVisibleTimeRange(categoryData, key);
-        let color = categoryData["settings"].includes("monochrome") ? getColor(0): getNextColor();
+        const color = _getElementColor(categoryName, key);
 
         if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min") || categoryData["settings"].includes("draw_individual_limit_max")){
             let minValue = Infinity;
@@ -601,7 +617,6 @@ function _updateCanvas(categoryData, canvas) {
             // _drawLimit(avg, key, color, true, "Average: ");
         }
     }
-    resetColors();
 
     function _drawLimit(value, min, max, unit, color, drawLine=true, label="") {
         let limitY = _getY(min, max, value);
@@ -712,8 +727,11 @@ function _generateEntry(category, keys, categoryData) {
     // Create rows
     for (const key of keys)
     {
-        let rowElement = {};
-        let color = categoryData["settings"].includes("monochrome") ? getColor(0): getNextColor();
+        const rowElement = {};
+        const color = categoryData["settings"].includes("monochrome") ? getColor(0): getNextColor();
+
+        rowElement["active"] = true;
+        rowElement["color"] = color;
 
         // Only use different colors if there is a graph
         // if (!categoryData["settings"].includes("nograph"))
@@ -722,6 +740,8 @@ function _generateEntry(category, keys, categoryData) {
         att = document.createAttribute("class");
         att.value = "tr";
         tr.setAttributeNode(att);
+        tr.onmousedown = (evt) => {_categoryRowPressed(evt, rowElement, categoryData, category);};
+        rowElement["tr"] = tr;
 
         // Label
         td = document.createElement("td");
@@ -800,6 +820,7 @@ function _generateEntry(category, keys, categoryData) {
 
         // Done building DOM-Tree.
         categoryElements["canvas"] = canvas;
+        categoryElements["div"] = tr;
     }
     elements[category] = categoryElements;
     table.appendChild(graphWrapper);
@@ -1204,4 +1225,37 @@ function getNextColor() {
 
 function resetColors() {
     colorCounter = 0;
+}
+
+function _categoryRowPressed(evt, rowElement, categoryData, categoryName) {
+    if (categoryData["settings"].includes("nograph"))
+        return;
+
+    const oldActive = rowElement["active"];
+    const newActive = !oldActive
+    const color = newActive ? rowElement["color"] : INACTIVE_COLOR;
+    const att = document.createAttribute("style");
+
+    rowElement["active"] = newActive;
+
+    att.value = "color:" + color;
+    rowElement["tr"].setAttributeNode(att);
+
+    _updateBars(categoryData, categoryName);
+
+    if (_getActiveEntries(categoryName, categoryData).length == 0)
+    {
+        elements[categoryName]["canvas"].remove();
+    } else {
+        if (oldActive == false && newActive == true)
+        {
+            elements[categoryName]["div"].appendChild(elements[categoryName]["canvas"]);
+        }
+
+        _updateCanvas(categoryName, categoryData, elements[categoryName]["canvas"]);
+    }
+}
+
+function _getElementColor(categoryName, key) {
+    return elements[categoryName][key]["active"] ? elements[categoryName][key]["color"] : INACTIVE_COLOR;
 }
