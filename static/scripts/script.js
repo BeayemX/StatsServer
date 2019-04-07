@@ -153,8 +153,8 @@ function activateAutoUpdate() {
 }
 
 function handleDataUpdate(data_json_s) {
-    log("Handle update... " + humanizeBytes(roughSizeOfObject(data_json_s)));
     newServerData = JSON.parse(data_json_s);
+    log("Handle update... " + humanizeBytes(newServerData["size"]));
     // console.log(newServerData)
 
     // Store last server sync and show time of last update
@@ -1115,40 +1115,6 @@ function _clampCursorToVisibleRange() {
 
 function log(text) {
     infoLine.innerHTML = text;
-}
-
-// source: https://stackoverflow.com/questions/1248302/how-to-get-the-size-of-a-javascript-object
-function roughSizeOfObject( object ) {
-    var objectList = [];
-    var stack = [ object ];
-    var bytes = 0;
-
-    while ( stack.length ) {
-        var value = stack.pop();
-
-        if ( typeof value === 'boolean' ) {
-            bytes += 4;
-        }
-        else if ( typeof value === 'string' ) {
-            bytes += value.length * 2;
-        }
-        else if ( typeof value === 'number' ) {
-            bytes += 8;
-        }
-        else if
-        (
-            typeof value === 'object'
-            && objectList.indexOf( value ) === -1
-        )
-        {
-            objectList.push( value );
-
-            for( var i in value ) {
-                stack.push( value[ i ] );
-            }
-        }
-    }
-    return bytes;
 }
 
 function humanizeBytes(bytes) {

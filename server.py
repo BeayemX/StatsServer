@@ -53,9 +53,19 @@ def get_data_as_json(last_server_sync_timestamp):
         categories[category_key] = category
 
     data["categories"] = categories
+
+    # Add additional information
     data["last_server_sync_timestamp"] = time.time()
 
+    # Create JSON to calculate size
     return_json = json.dumps(data)
+
+    # Add size-information to data-object
+    data["size"] = sys.getsizeof(return_json)
+
+    # Recreate JSON from data-object with added 'size'-information
+    return_json = json.dumps(data)
+
     print("Transferring: ", round(sys.getsizeof(return_json) / 1024 / 1024 * 1000) / 1000, "MB")
 
     return return_json
