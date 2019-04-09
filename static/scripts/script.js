@@ -1126,6 +1126,7 @@ function log(text) {
 }
 
 function humanizeBytes(bytes) {
+    bytes = Math.round(bytes); // when calculating average bytes can be float
     const conversionFactor = 1024.0;
 
     const KB = bytes / conversionFactor;
