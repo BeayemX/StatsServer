@@ -1129,21 +1129,16 @@ function humanizeBytes(bytes) {
     bytes = Math.round(bytes); // when calculating average bytes can be float
     const conversionFactor = 1024.0;
 
-    const KB = bytes / conversionFactor;
-    const MB = KB / conversionFactor;
-    const GB = MB / conversionFactor;
+    const units = ["B", "KB", "MB", "GB", "TB", "PB"];
 
-    if (bytes < conversionFactor)
-        return bytes + " B";
+    let idx = 0;
+    while (bytes >= conversionFactor && idx < units.length - 1) {
+        bytes = bytes / conversionFactor;
+        idx += 1;
+    }
 
-    if (KB < conversionFactor)
-        return roundToDecimals(KB, 1) + " KB";
-
-    if (MB < conversionFactor)
-        return roundToDecimals(MB, 2) + " MB";
-
-        const GBDecimals = GB < 100 ? 2 : 1;
-    return roundToDecimals(GB, GBDecimals) + " GB";
+    const decimals = bytes >= 100 ? 1 : 2;
+    return roundToDecimals(bytes, decimals) + " " + units[idx];
 }
 
 // UTILITIES
