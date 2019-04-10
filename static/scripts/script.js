@@ -1125,11 +1125,11 @@ function log(text) {
     infoLine.innerHTML = text;
 }
 
+const conversionFactor = 1024.0;
+const units = ["B", "KB", "MB", "GB", "TB", "PB"];
+
 function humanizeBytes(bytes) {
     bytes = Math.round(bytes); // when calculating average bytes can be float
-    const conversionFactor = 1024.0;
-
-    const units = ["B", "KB", "MB", "GB", "TB", "PB"];
 
     let idx = 0;
     while (bytes >= conversionFactor && idx < units.length - 1) {
@@ -1148,9 +1148,9 @@ function roundToDecimals(value, decimals) {
 }
 
 function _humanizeTime(sec) {
-    var hours   = Math.floor(sec / 3600);
-    var minutes = Math.floor((sec - (hours * 3600)) / 60);
-    var seconds = sec - (hours * 3600) - (minutes * 60);
+    const hours   = Math.floor(sec / 3600);
+    const minutes = Math.floor((sec - (hours * 3600)) / 60);
+    const seconds = sec - (hours * 3600) - (minutes * 60);
 
     let text = "";
 
