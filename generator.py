@@ -19,7 +19,7 @@ TIME_STEP = conf["Generator"].getfloat("Timestep")
 MAX_AGE = conf["Generator"].getfloat("MaxAge") # in seconds
 MAX_NETWORK_SPEED = conf["Generator"].getfloat("MaxNetworkSpeed") # in Byte
 MAX_NETWORK_SPEED *= TIME_STEP
-USE_DELTA_COMPRESSION = True
+USE_DELTA_COMPRESSION = conf["General"].getboolean("UseDeltaCompression")
 
 # Network variables
 sent_byte = psutil.net_io_counters()[0]
