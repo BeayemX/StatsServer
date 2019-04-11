@@ -155,6 +155,26 @@ function activateAutoUpdate() {
 function handleDataUpdate(data_json_s) {
     newServerData = JSON.parse(data_json_s);
     log("Handle update... " + humanizeBytes(newServerData["size"]));
+
+    if (newServerData["use_delta_compression"]) {
+        let categories = newServerData["categories"];
+        for (let categoryName in categories)
+        {
+            let categoryData = categories[categoryName];
+            for (let entryName in categoryData["entries"])
+            {
+                let entryData = categoryData["entries"][entryName];
+                let values = entryData["values"];
+
+                for (let i = 1; i < values.length; ++i) {
+                    for (let j = 0; j < values[i].length; ++j) {
+                        values[i][j] = values[i-1][j] + values[i][j];
+                    }
+                }
+            }
+        }
+    }
+
     // console.log(newServerData)
 
     // Store last server sync and show time of last update

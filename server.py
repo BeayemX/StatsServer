@@ -14,7 +14,7 @@ from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, send, emit
 
 # Stats Server
-from generator import get_values_for_label, gather_data
+from generator import get_values_for_label, gather_data, USE_DELTA_COMPRESSION
 
 
 # Load settings from config file
@@ -56,6 +56,7 @@ def get_data_as_json(last_server_sync_timestamp):
 
     # Add additional information
     data["last_server_sync_timestamp"] = time.time()
+    data["use_delta_compression"] = USE_DELTA_COMPRESSION
 
     # Create JSON to calculate size
     return_json = json.dumps(data)
@@ -67,7 +68,6 @@ def get_data_as_json(last_server_sync_timestamp):
     return_json += '}' # close json
 
     print("Transferring: ", round(size / 1024 / 1024 * 1000) / 1000, "MB")
-
     return return_json
 
 @app.route('/')

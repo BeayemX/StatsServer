@@ -19,6 +19,7 @@ TIME_STEP = conf["Generator"].getfloat("Timestep")
 MAX_AGE = conf["Generator"].getfloat("MaxAge") # in seconds
 MAX_NETWORK_SPEED = conf["Generator"].getfloat("MaxNetworkSpeed") # in Byte
 MAX_NETWORK_SPEED *= TIME_STEP
+USE_DELTA_COMPRESSION = True
 
 # Network variables
 sent_byte = psutil.net_io_counters()[0]
@@ -48,6 +49,31 @@ def get_values_for_label(category, label, last_server_sync_timestamp):
         args = (category, label, last_server_sync_timestamp)
         cursor.execute(sql, args)
         data = cursor.fetchall()
+
+        if USE_DELTA_COMPRESSION:
+            curr_entry = data[0]
+            data_list = []
+            data_list.append([curr_entry[0], curr_entry[1]])
+
+            ignore_first_value =  True
+            delta_values = None
+
+            for d in data:
+                if ignore_first_value:
+                    ignore_first_value = False
+                    continue
+
+                delta_values = []
+                for i in range(len(curr_entry)):
+                    curr_val = round(d[i] - curr_entry[i], 2)
+                    if curr_val == int(round(curr_val)):
+                        curr_val = int(round(curr_val))
+                    delta_values.append(curr_val)
+
+                curr_entry = d
+                data_list.append(delta_values)
+
+            return data_list
         return data
 
 def gather_data():
