@@ -30,15 +30,24 @@ if not os.path.exists(DB_DIR):
     os.makedirs(DB_DIR)
 
 
-def add_database_entry(cursor, category, label, value):
-    current_time = time.time()
+def add_database_entry(cursor, current_time, category, label, value):
     sql = 'INSERT INTO data (category, label, time, value) values(?, ?, ?, ?)'
     args = (category, label, current_time, value)
     cursor.execute(sql, args)
 
+def add_database_process_entry(cursor, time, name, cpu, mem):
+    sql = 'INSERT INTO processes (time, name, cpu, memory) values(?, ?, ?, ?)'
+    args = (time, name, cpu, round(mem, 2))
+    cursor.execute(sql, args)
+
 def clean_up_database(cursor):
     current_time = time.time()
+
     sql = 'DELETE FROM data WHERE ROWID IN (SELECT ROWID FROM data WHERE time < ?)'
+    args = (current_time - MAX_AGE, )
+    cursor.execute(sql, args)
+
+    sql = 'DELETE FROM processes WHERE time < ?'
     args = (current_time - MAX_AGE, )
     cursor.execute(sql, args)
 
@@ -168,7 +177,7 @@ def add_load_entries(data):
     data["load"] = category
 
 def add_cpu_entries(data):
-    category = create_category("draw_global_limit_max")
+    category = create_category("draw_global_limit_max", "process_list")
     category["min"] = 0
     category["max"] = 100
     category["unit"] = " %"
@@ -200,7 +209,7 @@ def add_temperature_entries(data):
     data["temperatures"] = category
 
 def add_memory_entries(data):
-    category = create_category("draw_individual_limits")
+    category = create_category("draw_individual_limits", "process_list")
 
     # RAM
     entry = create_category_entry(psutil.virtual_memory().used, "byte", 0, psutil.virtual_memory().total)
@@ -252,6 +261,56 @@ def add_network_entries(data):
 
     data["Network"] = category
 
+def gather_process_list():
+    process_list = []
+    for proc in psutil.process_iter():
+        try:
+            p_dict = proc.as_dict(attrs=["name", "cpu_percent", "memory_percent"])
+            process_list.append((p_dict["name"], p_dict["cpu_percent"], p_dict["memory_percent"])) # create list instead of using dict to make it hashable to be able to create a set later on
+
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+
+    # return process_list
+
+    cpu_list = sorted(process_list, key=lambda process: process[1], reverse=True)
+    mem_list = sorted(process_list, key=lambda process: process[2], reverse=True)
+
+    cpu_list = cpu_list[:10]
+    mem_list = mem_list[:10]
+
+    # only unique entries
+    process_list = cpu_list + mem_list
+    process_list = set(process_list)
+
+    return process_list
+
+def get_process_list(category, time):
+    data = {}
+    with connect(f"file:{DB_FILE}?mode=ro", uri=True) as conn:
+        cursor = conn.cursor()
+        sql = 'SELECT time, name, cpu, memory FROM processes WHERE time > ?'
+        args = (time, )
+        cursor.execute(sql, args)
+        data = cursor.fetchall()
+        """
+        sql = 'SELECT DISTINCT time FROM processes WHERE time > ?'
+        processes_timestamps = cursor.fetchall()
+        for process_timestamp in processes_timestamps:
+            process_timestamp = process_timestamp[0] # TODO not sure if needed
+            data[process_timestamp] = get_processes_at_time(cursor, category, process_timestamp)
+        """
+
+    return data
+
+def get_processes_at_time(cursor, category, time):
+    #print("get_processes_at_time", category, time)
+    sql = 'SELECT time, name, ' + category + ' FROM processes WHERE time = ? ORDER BY ' + category + ' DESC LIMIT 5' # FIXME when using '?' instead of string concatenation it would not work and instead of interpreting 'cpu' all float-values would be the string 'cpu'... maybe because forwarding cursor in nested sql process?
+    args = (time, )
+    cursor.execute(sql, args)
+    data = cursor.fetchall()
+
+    return data
 
 # Run main program
 if __name__ == "__main__":
@@ -259,6 +318,7 @@ if __name__ == "__main__":
     with connect(DB_FILE) as conn:
         cursor = conn.cursor()
         cursor.execute('CREATE TABLE IF NOT EXISTS data (category STRING, label STRING, time REAL, value REAL)')
+        cursor.execute('CREATE TABLE IF NOT EXISTS processes (time REAL, name STRING, cpu REAL, memory REAL)')
 
     start_time = 0
     end_time = 0
@@ -270,15 +330,24 @@ if __name__ == "__main__":
 
             start_time = time.time()
             data = gather_data()
+            # TODO use start_time instead of time.time() in add_database_entry()?
             for category, category_data in data.items():
                 for label, value in category_data["entries"].items():
-                    add_database_entry(cursor, category, label, value["value"])
+                    add_database_entry(cursor, start_time, category, label, value["value"])
+
+            process_list = gather_process_list()
+            for process in process_list:
+                name = process[0]
+                cpu = process[1]
+                mem = process[2]
+
+                add_database_process_entry(cursor, start_time, name, cpu, mem)
 
             end_time = time.time()
 
             delta = end_time - start_time
             clean_up_database(cursor)
 
-        # print(delta)
+        print(delta)
         # print(".", end="", flush=True)
         time.sleep(max(0, TIME_STEP - delta))

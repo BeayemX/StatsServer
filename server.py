@@ -14,7 +14,7 @@ from flask import Flask, render_template, jsonify, request
 from flask_socketio import SocketIO, send, emit
 
 # Stats Server
-from generator import get_values_for_label, gather_data, USE_DELTA_COMPRESSION
+from generator import get_values_for_label, gather_data, get_process_list, USE_DELTA_COMPRESSION
 
 
 # Load settings from config file
@@ -53,6 +53,24 @@ def get_data_as_json(last_server_sync_timestamp):
         categories[category_key] = category
 
     data["categories"] = categories
+
+    # Add process list
+    processes = {}
+    processes["cpu"] = get_process_list("cpu", last_server_sync_timestamp)
+    processes["memory"] = get_process_list("memory", last_server_sync_timestamp)
+    data["processes"] = processes
+
+    """
+    # Print processed
+    for process_type in processes: # cpu or memory
+        print("\n", process_type.upper())
+        for process_timestamp in processes[process_type]: # for timestamps
+            print("\n", process_timestamp)
+            for process in processes[process_type][process_timestamp]:
+                print(str(process[1]).ljust(10), str(process[2]).rjust(15))
+
+        print()
+    """
 
     # Add additional information
     data["last_server_sync_timestamp"] = time.time()

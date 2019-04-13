@@ -33,6 +33,7 @@ let _timeRange;
 let rightValueBound = 0; // timestamp
 let storedTimeout = null;
 let elements = null;
+const categoriesWithProcessLists = [];
 
 let oldestTimeStamp = 0;
 
@@ -152,9 +153,50 @@ function activateAutoUpdate() {
     interval = setInterval(_requestData, RELOAD_MINIMUM_TIME_MS);
 }
 
+const processLists = {};
+
 function handleDataUpdate(data_json_s) {
     newServerData = JSON.parse(data_json_s);
     log("Handle update... " + humanizeBytes(newServerData["size"]));
+
+    // console.table(newServerData["processes"]["cpu"]);
+    const cpuProcesses = {};
+    const memoryProcesses = {};
+
+    let currentTimeStamp = newServerData["processes"]["cpu"][0][0];
+    cpuProcesses[currentTimeStamp] = []
+    memoryProcesses[currentTimeStamp] = []
+
+    for (let processEntry of newServerData["processes"]["cpu"]) {
+        if (processEntry[0] == currentTimeStamp) {
+            // cpuProcesses[currentTimeStamp] = processEntry;
+        } else {
+            // close previous entry
+            // sort
+            cpuProcesses[currentTimeStamp].sort((a, b) => {return b[2] - a[2];})
+            memoryProcesses[currentTimeStamp].sort((a, b) => {return b[3] - a[3];})
+
+            // Initialize new entry
+            currentTimeStamp = processEntry[0];
+            cpuProcesses[currentTimeStamp] = [];
+            memoryProcesses[currentTimeStamp] = [];
+        }
+        cpuProcesses[currentTimeStamp].push(processEntry);
+        memoryProcesses[currentTimeStamp].push(processEntry);
+    }
+
+    // for the last entry
+    cpuProcesses[currentTimeStamp].sort((a, b) => {return b[2] - a[2];})
+    memoryProcesses[currentTimeStamp].sort((a, b) => {return b[3] - a[3];})
+
+    console.table(cpuProcesses[currentTimeStamp]);
+    console.table(memoryProcesses[currentTimeStamp]);
+    // asdf
+    // TODO put process lists in to category data?
+    processLists["processors"] = cpuProcesses;
+    processLists["memory"] = memoryProcesses;
+
+    //
 
     if (newServerData["use_delta_compression"]) {
         let categories = newServerData["categories"];
@@ -254,6 +296,9 @@ function _updateGraphs() {
         _updateBars(categoryData, categoryName);
         _updateCanvas(categoryName, categoryData, elements[categoryName]["canvas"]);
     }
+
+    //
+    getProcessListAtCursor();
 }
 
 function getCursorTime() {
@@ -850,8 +895,57 @@ function _generateEntry(category, keys, categoryData) {
         categoryElements["canvas"] = canvas;
         categoryElements["div"] = tr;
     }
-    elements[category] = categoryElements;
+
+
+    // create process list
+    // asdf
+    if (categoryData["settings"].includes("process_list")) {
+
+        categoriesWithProcessLists.push(category);
+
+        categoryElements["processes"] = [];
+        tr = document.createElement("div");
+        att = document.createAttribute("class");
+        att.value = "tr processlistcontainer";
+        tr.setAttributeNode(att);
+
+        // create header
+        // TODO when clicking on this, lines should be hidden/made visible
+        const header = document.createElement("div");
+        att = document.createAttribute("class");
+        att.value = "tr processlistcontainerheader";
+        header.setAttributeNode(att);
+        header.innerHTML = "Processes";
+        tr.appendChild(header);
+
+        // create lines
+        for (let i=0; i<10; ++i) {
+            const processline = document.createElement("div");
+            att = document.createAttribute("class");
+            att.value = "processline";
+            processline.setAttributeNode(att);
+            tr.appendChild(processline);
+
+            const processName = document.createElement("div");
+            att = document.createAttribute("class");
+            att.value = "processName";
+            processName.setAttributeNode(att);
+            processline.appendChild(processName);
+
+            const processValue = document.createElement("div");
+            att = document.createAttribute("class");
+            att.value = "processValue";
+            processValue.setAttributeNode(att);
+            processline.appendChild(processValue);
+
+            categoryElements["processes"].push([processName, processValue]);
+        }
+        graphWrapper.appendChild(tr);
+    }
+
+    // Finalize
     table.appendChild(graphWrapper);
+    elements[category] = categoryElements;
 }
 
 function storeSettings() {
@@ -1059,6 +1153,32 @@ function _onCanvasMouseUp(ev, canvas) {
     ev.preventDefault();
 }
 
+function getProcessListAtCursor() {
+    let currentTime = 0;
+    for (let processTimeStamp of Object.keys(processLists["processors"]))
+    {
+        if (_cursorPos <= processTimeStamp)
+            break;
+
+        currentTime = processTimeStamp;
+    }
+
+    // asdf
+    for (let catCounter = 0; catCounter < categoriesWithProcessLists.length; ++catCounter) {
+        let category = categoriesWithProcessLists[catCounter];
+
+        for (let i = 0; i < elements[category]["processes"].length; ++i) {
+            let proc = processLists[category][currentTime][i];
+
+            elements[category]["processes"][i][0].innerHTML = proc[1];
+            elements[category]["processes"][i][1].innerHTML = proc[2 + catCounter] + " %";
+        }
+    }
+    //console.table(cpuProcesses[currentTime].slice(0, 10));
+    //console.table(memoryProcesses[currentTime].slice(0, 10));
+
+}
+
 function _onCanvasMouseMove(ev, canvas) {
     const rect = ev.target.getBoundingClientRect();
     // const clientY = ev.touches[0].clientY - rect.top;
@@ -1071,7 +1191,6 @@ function _onCanvasMouseMove(ev, canvas) {
             _cursorPos += (clientX - singleTouchStart) * timeRange / canvas.width;
 
             singleTouchStart = clientX;
-
         } else if (touchStartX) {
             let clientX = 0;
             let scrollWidth = canvas.width;
