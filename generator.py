@@ -159,8 +159,11 @@ def add_load_entries(data):
     category["max"] = max_value
     category["unit"] = ""
 
-    entry = create_category_entry(os.getloadavg()[0], "", 0, max_value)
-    category["entries"]["Load"] = entry
+    loads = os.getloadavg()
+
+    category["entries"]["Load 1"] = create_category_entry(loads[0], "", 0, max_value)
+    category["entries"]["Load 5"] = create_category_entry(loads[1], "", 0, max_value)
+    category["entries"]["Load 15"] = create_category_entry(loads[2], "", 0, max_value)
 
     data["load"] = category
 
