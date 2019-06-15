@@ -34,7 +34,7 @@ Then you can connect to the server using a browser by visiting `<ip-address>:505
 Install all python dependencies by running:
 
 ```
-pip install requirements -r --user
+pip install -r requirements.txt --user
 ```
 # The client
 At the moment the client is only designed for mobile phones. (A desktop version will follow soon).
