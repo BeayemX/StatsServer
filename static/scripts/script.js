@@ -245,8 +245,8 @@ function handleDataUpdate(data_json_s) {
             let categoryData = categories[categoryName];
             for (let entryName in categoryData["entries"])
             {
-                let entryData = categoryData["entries"][entryName];
-                cachedData["categories"][categoryName]["entries"][entryName]["values"].push([last_server_sync_timestamp, entryData["value"]]); // add current value to values
+                //let entryData = categoryData["entries"][entryName];
+                //cachedData["categories"][categoryName]["entries"][entryName]["values"].push([last_server_sync_timestamp, entryData["value"]]); // add current value to values
             }
         }
     } else { // add new values to cached data
@@ -257,11 +257,11 @@ function handleDataUpdate(data_json_s) {
             for (let entryName in categoryData["entries"])
             {
                 let entryData = categoryData["entries"][entryName];
-                cachedData["categories"][categoryName]["entries"][entryName]["value"] = entryData["value"];
+                //cachedData["categories"][categoryName]["entries"][entryName]["value"] = entryData["value"];
 
-                cachedData["categories"][categoryName]["entries"][entryName]["values"].pop(); // remove ["value"] previously added
+                //cachedData["categories"][categoryName]["entries"][entryName]["values"].pop(); // remove ["value"] previously added
                 cachedData["categories"][categoryName]["entries"][entryName]["values"] = cachedData["categories"][categoryName]["entries"][entryName]["values"].concat(entryData["values"]); // add new value-list to cached value-list
-                cachedData["categories"][categoryName]["entries"][entryName]["values"].push([last_server_sync_timestamp, entryData["value"]]); // add current value to values
+                //cachedData["categories"][categoryName]["entries"][entryName]["values"].push([last_server_sync_timestamp, entryData["value"]]); // add current value to values
             }
         }
     }
@@ -1171,7 +1171,7 @@ function getProcessListAtCursor() {
             let proc = processLists[category][currentTime][i];
 
             elements[category]["processes"][i][0].innerHTML = proc[1];
-            elements[category]["processes"][i][1].innerHTML = proc[2 + catCounter] + " %";
+            elements[category]["processes"][i][1].innerHTML = proc[2 + catCounter].toFixed(1) + " %";
         }
     }
     //console.table(cpuProcesses[currentTime].slice(0, 10));

@@ -333,6 +333,8 @@ if __name__ == "__main__":
             # TODO use start_time instead of time.time() in add_database_entry()?
             for category, category_data in data.items():
                 for label, value in category_data["entries"].items():
+                    # TODO not sure if needed, will be influenced because this value will be generated while gathering every data which will cause high cpu loads...
+                    # TODO maybe replace with function that just gathers categories/keys
                     add_database_entry(cursor, start_time, category, label, value["value"])
 
             process_list = gather_process_list()
@@ -348,6 +350,6 @@ if __name__ == "__main__":
             delta = end_time - start_time
             clean_up_database(cursor)
 
-        print(delta)
+        # print(delta)
         # print(".", end="", flush=True)
         time.sleep(max(0, TIME_STEP - delta))
