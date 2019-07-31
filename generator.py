@@ -259,6 +259,9 @@ if __name__ == "__main__":
     with connect(DB_FILE) as conn:
         cursor = conn.cursor()
         cursor.execute('CREATE TABLE IF NOT EXISTS data (category STRING, label STRING, time REAL, value REAL)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS category_index ON data (category)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS label_index ON data (label)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS time_index ON data (time)')
 
     start_time = 0
     end_time = 0
