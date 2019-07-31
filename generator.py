@@ -116,7 +116,7 @@ def add_sinus_entries(data):
         entry = create_category_entry(value, "", -1.5, 1.5)
         category["entries"][f"Sine{int(speed)}"] = entry
 
-    data["Test values"] = category
+    data["test values"] = category
 
 def add_random_entries(data):
     category = create_category()
@@ -129,7 +129,7 @@ def add_random_entries(data):
         entry = create_category_entry(rand_value, "", -0.5, 1.5)
         category["entries"][f"Random{i}"] = entry
 
-    data["Random values"] = category
+    data["random values"] = category
 
 def add_linear_entries(data):
     category = create_category()
@@ -148,7 +148,7 @@ def add_linear_entries(data):
     entry = create_category_entry(now.second, "m", 0, 60)
     category["entries"]["Seconds"] = entry
 
-    data["Time"] = category
+    data["time"] = category
 
 def add_load_entries(data):
     category = create_category("draw_individual_limits", "draw_outer_limit_min", "draw_outer_limit_max")
@@ -250,7 +250,7 @@ def add_network_entries(data):
     entry = create_category_entry(delta_received, "byte", 0, MAX_NETWORK_SPEED)
     category["entries"]["Received"] = entry
 
-    data["Network"] = category
+    data["network"] = category
 
 
 # Run main program
