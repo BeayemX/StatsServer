@@ -42,40 +42,6 @@ def clean_up_database(cursor):
     args = (current_time - MAX_AGE, )
     cursor.execute(sql, args)
 
-def get_values_for_label(category, label, last_server_sync_timestamp):
-    with connect(f"file:{DB_FILE}?mode=ro", uri=True) as conn:
-        cursor = conn.cursor()
-        sql = 'SELECT time, value FROM data WHERE category=? AND label=? AND time > ?'
-        args = (category, label, last_server_sync_timestamp)
-        cursor.execute(sql, args)
-        data = cursor.fetchall()
-
-        if USE_DELTA_COMPRESSION:
-            curr_entry = data[0]
-            data_list = []
-            data_list.append([curr_entry[0], curr_entry[1]])
-
-            ignore_first_value =  True
-            delta_values = None
-
-            for d in data:
-                if ignore_first_value:
-                    ignore_first_value = False
-                    continue
-
-                delta_values = []
-                for i in range(len(curr_entry)):
-                    curr_val = round(d[i] - curr_entry[i], 2)
-                    if curr_val == int(round(curr_val)):
-                        curr_val = int(round(curr_val))
-                    delta_values.append(curr_val)
-
-                curr_entry = d
-                data_list.append(delta_values)
-
-            return data_list
-        return data
-
 def gather_data():
     data = {}
 
@@ -98,12 +64,12 @@ def create_category(*settings):
         "settings": settings,
     }
 
-def create_category_entry(value, unit="", min=0, max=100):
+def create_category_entry(value, unit="", minVal=0, maxVal=100):
     return {
         "value": value,
         "unit": unit,
-        "min": min,
-        "max": max
+        "min": minVal,
+        "max": maxVal
     }
 
 def add_sinus_entries(data):
@@ -159,13 +125,16 @@ def add_load_entries(data):
     category["max"] = max_value
     category["unit"] = ""
 
-    loads = os.getloadavg()
-
-    category["entries"]["Load 1"] = create_category_entry(loads[0], "", 0, max_value)
-    category["entries"]["Load 5"] = create_category_entry(loads[1], "", 0, max_value)
-    category["entries"]["Load 15"] = create_category_entry(loads[2], "", 0, max_value)
-
+    category["entries"] = _get_load_entries()
     data["load"] = category
+
+def _get_load_entries():
+    entries = {}
+    loads = os.getloadavg()
+    entries["Load 1"] = loads[0] # create_category_entry(loads[0], "", 0, max_value)
+    entries["Load 5"] = loads[1] # create_category_entry(loads[1], "", 0, max_value)
+    entries["Load 15"] = loads[2] # create_category_entry(loads[2], "", 0, max_value)
+    return entries
 
 def add_cpu_entries(data):
     category = create_category("draw_global_limit_max")
@@ -173,14 +142,20 @@ def add_cpu_entries(data):
     category["max"] = 100
     category["unit"] = " %"
 
+    category["entries"] = _get_cpu_entries()
+    data["processors"] = category
+
+def _get_cpu_entries():
+    entries = {}
+
     cpus = psutil.cpu_percent(percpu = True)
     counter = 0
     for cpu_load in cpus:
         entry = create_category_entry(cpu_load, " %", 0, 100)
-        category["entries"][f"CPU{counter}"] = entry
+        entries[f"CPU{counter}"] = entry
         counter +=1
 
-    data["processors"] = category
+    return entries
 
 def add_temperature_entries(data):
     category = create_category("draw_global_limit_min", "draw_global_limit_max")
@@ -188,6 +163,11 @@ def add_temperature_entries(data):
     category["max"] = 100
     category["unit"] = "°C"
 
+    category["entries"] = _get_temperature_entries()
+    data["temperature"] = category
+
+def _get_temperature_entries():
+    entries = {}
     for name, temps in psutil.sensors_temperatures().items():
         for entry_name in temps:
             label = entry_name.label
@@ -195,37 +175,47 @@ def add_temperature_entries(data):
                 label = name
 
             entry = create_category_entry(entry_name.current, "°C", 35, 100)
-            category["entries"][label] = entry
-
-    data["temperatures"] = category
+            entries[label] = entry
+    return entries
 
 def add_memory_entries(data):
     category = create_category("draw_individual_limits")
 
-    # RAM
-    entry = create_category_entry(psutil.virtual_memory().used, "byte", 0, psutil.virtual_memory().total)
-    category["entries"]["RAM"] = entry
-
-    # Swap
-    entry = create_category_entry(psutil.swap_memory().used, "byte", 0, psutil.swap_memory().total)
-    category["entries"]["Swap"] = entry
-
+    category["entries"] = _get_memory_entries()
     data["memory"] = category
+
+def _get_memory_entries():
+    entries = {}
+    entries["RAM"] = create_category_entry(psutil.virtual_memory().used, "byte", 0, psutil.virtual_memory().total)
+    entries["Swap"] = create_category_entry(psutil.swap_memory().used, "byte", 0, psutil.swap_memory().total)
+    return entries
 
 def add_disk_entries(data):
     category = create_category("nograph") # use psutil.disk_usage('/home/').total?
 
-    for name, path in [("Disk", "/"), ("DB Directory", DB_DIR)]:
-        entry = create_category_entry(psutil.disk_usage(path).used, "byte", 0, psutil.disk_usage(path).total)
-        category["entries"][name] = entry
-
+    category["entries"] = _get_disk_entries()
     data["storage"] = category
 
+def _get_disk_entries():
+    entries = {}
+
+    for name, path in [("Disk", "/"), ("Ram disk", DB_DIR)]:
+        entries[name] = create_category_entry(psutil.disk_usage(path).used, "byte", 0, psutil.disk_usage(path).total)
+
+    entries["DB file size"] = create_category_entry(os.path.getsize(os.path.join(DB_DIR, DB_FILE)), "byte", 0, psutil.disk_usage(DB_DIR).total)
+
+    return entries
+
 def add_network_entries(data):
+    category = create_category("draw_individual_limit_max")
+
+    category["entries"] = _get_network_entries()
+    data["network"] = category
+
+def _get_network_entries():
     global sent_byte
     global received_byte
-
-    category = create_category("draw_individual_limit_max")
+    entries = {}
 
     #nics = psutil.net_if_stats()
     #for nic in nics:
@@ -242,27 +232,11 @@ def add_network_entries(data):
     sent_byte = new_sent
     received_byte = new_received
 
-    # Sent value
-    entry = create_category_entry(delta_sent, "byte", 0, MAX_NETWORK_SPEED / 3)
-    category["entries"]["Sent"] = entry
+    entries["Sent"] = create_category_entry(delta_sent, "byte", 0, MAX_NETWORK_SPEED / 3)
+    entries["Received"] = create_category_entry(delta_received, "byte", 0, MAX_NETWORK_SPEED)
+    return entries
 
-    # Received value
-    entry = create_category_entry(delta_received, "byte", 0, MAX_NETWORK_SPEED)
-    category["entries"]["Received"] = entry
-
-    data["network"] = category
-
-
-# Run main program
-if __name__ == "__main__":
-    # Initialize
-    with connect(DB_FILE) as conn:
-        cursor = conn.cursor()
-        cursor.execute('CREATE TABLE IF NOT EXISTS data (category STRING, label STRING, time REAL, value REAL)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS category_index ON data (category)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS label_index ON data (label)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS time_index ON data (time)')
-
+def non_thread_gathering():
     start_time = 0
     end_time = 0
     delta = 0
@@ -275,13 +249,112 @@ if __name__ == "__main__":
             data = gather_data()
             for category, category_data in data.items():
                 for label, value in category_data["entries"].items():
-                    add_database_entry(cursor, category, label, value["value"])
+                    # add_database_entry(cursor, category, label, value["value"])
+                    try:
+                        value = value["value"]
+                    except:
+                        pass
+                    add_database_entry(cursor, category, label, value)
 
-            end_time = time.time()
 
-            delta = end_time - start_time
             clean_up_database(cursor)
 
-        # print(delta)
+        end_time = time.time()
+        delta = end_time - start_time
+
         # print(".", end="", flush=True)
-        time.sleep(max(0, TIME_STEP - delta))
+
+        actual_sleep_time = max(0, TIME_STEP - delta)
+        print(actual_sleep_time)
+
+        time.sleep(actual_sleep_time)
+
+threads = {}
+def multi_thread_gathering():
+    import threading
+    functions = {
+        "processors": {
+            "function": _get_cpu_entries,
+            "sleep_time": 0.5
+        },
+        "load": {
+            "function": _get_load_entries,
+            "sleep_time": 5.0
+        },
+        "temperature": {
+            "function": _get_temperature_entries,
+            "sleep_time": 1.0
+        },
+        "memory": {
+            "function": _get_memory_entries,
+            "sleep_time": 5.0
+        },
+        "storage": {
+            "function": _get_disk_entries,
+            "sleep_time": 30.0
+        },
+        "network": {
+            "function": _get_network_entries,
+            "sleep_time": 1.0
+        }
+    }
+
+    for category, element in functions.items():
+        thread_id = f"[ {category.capitalize()} ]"
+        func = element["function"]
+        sleep_time = element["sleep_time"]
+        t = threading.Thread(target=thread_gathering, args=(func, thread_id, category, sleep_time))
+        threads[thread_id] = t
+
+    # TODO use list comprehension
+    # [t.start() for t in threads.values()]
+    # [t.join() for t in threads.values()]
+    for t in threads.values():
+        t.start()
+
+    for t in threads.values():
+        t.join()
+
+def thread_gathering(func, thread_id, category, sleep_time):
+    start_time = 0
+    end_time = 0
+    delta = 0
+
+    while True:
+        # Get data
+        start_time = time.time()
+
+        entries = func()
+
+        # Write data
+        for label, label_entry in entries.items():
+            value = label_entry
+            try: # HACK
+                value = value["value"]
+            except:
+                pass
+
+            with connect(DB_FILE) as conn:
+                cursor = conn.cursor()
+                add_database_entry(cursor, category, label, value)
+                #print("writing", thread_id, category, label, value)
+
+        # Finish frame
+        end_time = time.time()
+        delta = end_time - start_time
+
+        actual_sleep_time = max(0, sleep_time - delta)
+        print(thread_id.ljust(32), str(actual_sleep_time))
+
+        time.sleep(actual_sleep_time)
+
+
+# Run main program
+if __name__ == "__main__":
+    with connect(DB_FILE) as conn:
+        cursor = conn.cursor()
+        cursor.execute('CREATE TABLE IF NOT EXISTS data (category STRING, label STRING, time REAL, value REAL)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS category_index ON data (category, label, time)')
+    # Initialize
+    #non_thread_gathering()
+    multi_thread_gathering()
