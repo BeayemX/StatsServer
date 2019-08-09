@@ -20,7 +20,7 @@ let availableColors = [
 
 const DEFAULT_AUTO_RELOAD = true;
 const DEFAULT_TIME_RANGE = 60*60;
-const RELOAD_MINIMUM_TIME_MS = 500;
+const RELOAD_MINIMUM_TIME_MS = 1000;
 const INACTIVE_COLOR = "#777";
 const timeRanges = [60, 60*5, 60*10, 60*30, 60*60, 60*60 * 6, 60*60 * 12, 60*60*24];
 
@@ -146,7 +146,14 @@ function onLoad() {
     changePreparationResolution(0); // calling _updateGraphs() (initially unnecessary)
 }
 
-function _requestData(){
+let waitingForRequest = false;
+function _requestData() {
+    if (waitingForRequest) {
+        return;
+    }
+
+    waitingForRequest = true;
+
     socket.emit("request_data", {
         "last_server_sync_timestamp": last_server_sync_timestamp,
         });
@@ -162,6 +169,8 @@ function activateAutoUpdate() {
 }
 
 function handleDataUpdate(data_json_s) {
+    waitingForRequest = false;
+
     console.log("handleDataUpdate")
     newServerData = JSON.parse(data_json_s);
     log("Handle update... " + humanizeBytes(newServerData["size"]));
