@@ -275,7 +275,7 @@ def multi_thread_gathering():
     functions = {
         "processors": {
             "function": _get_cpu_entries,
-            "sleep_time": 0.5
+            "sleep_time": 2.0
         },
         "load": {
             "function": _get_load_entries,
@@ -283,11 +283,11 @@ def multi_thread_gathering():
         },
         "temperature": {
             "function": _get_temperature_entries,
-            "sleep_time": 1.0
+            "sleep_time": 5.0
         },
         "memory": {
             "function": _get_memory_entries,
-            "sleep_time": 5.0
+            "sleep_time": 10.0
         },
         "storage": {
             "function": _get_disk_entries,
@@ -295,7 +295,7 @@ def multi_thread_gathering():
         },
         "network": {
             "function": _get_network_entries,
-            "sleep_time": 1.0
+            "sleep_time": 10.0
         }
     }
 
