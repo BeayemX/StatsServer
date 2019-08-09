@@ -101,7 +101,7 @@ def get_data_as_json(last_server_sync_timestamp):
             entries[label]["min"] = 0
             entries[label]["max"] = 100
 
-        category["settings"] = ["nope"]
+        category["settings"] = ["draw_global_limits"]
         category["entries"] = entries
 
         categories[category_key] = category

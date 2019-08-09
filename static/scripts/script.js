@@ -25,6 +25,9 @@ const INACTIVE_COLOR = "#777";
 const timeRanges = [60, 60*5, 60*10, 60*30, 60*60, 60*60 * 6, 60*60 * 12, 60*60*24];
 
 const INCLUDE_CURRENT_VALUE = false;
+const autoscale = true;
+const autoScaleOuterSpaceFactor = 0.1;
+
 
 // Members
 let _cursorPos = 0; // timestamp
@@ -535,6 +538,7 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         minMaxValues[key] = {};
         minMaxValues[key]["min"] = minValue;
         minMaxValues[key]["max"] = maxValue;
+
         minMaxValues[key]["avg"] = avg;
     }
 
@@ -566,7 +570,7 @@ function _updateCanvas(categoryName, categoryData, canvas) {
     ctx.lineTo(width, height * 0.75);
 
     // Vertical lines
-    const right = rightValueBound;
+    // const right = rightValueBound;
     const timerange = _getTimeRange();
     const left = Math.round(rightValueBound - timerange);
 
@@ -608,6 +612,7 @@ function _updateCanvas(categoryName, categoryData, canvas) {
 
     ctx.stroke();
 
+
     // Create graph lines
     for (const key of keys) {
         if (!elements[categoryName].labels[key]["active"])
@@ -619,6 +624,13 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         // Draw graph
         let minValue = categoryData["entries"][key]["min"];
         let maxValue = categoryData["entries"][key]["max"];
+
+        if (autoscale) {
+            const range = minMaxValues["globalMax"] - minMaxValues["globalMin"];
+
+            minValue = minMaxValues["globalMin"] - range * autoScaleOuterSpaceFactor;
+            maxValue = minMaxValues["globalMax"] + range * autoScaleOuterSpaceFactor;
+        }
 
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
@@ -639,9 +651,20 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         ctx.stroke();
     }
 
+    // HACK
+    categoryData["min"] = minMaxValues["globalMin"];
+    categoryData["max"] = minMaxValues["globalMax"];
+
+    if (autoscale) {
+        const range = minMaxValues["globalMax"] - minMaxValues["globalMin"];
+        categoryData["min"] = minMaxValues["globalMin"] - range * autoScaleOuterSpaceFactor;
+        categoryData["max"] = minMaxValues["globalMax"] + range * autoScaleOuterSpaceFactor;
+    }
+    // HACK end
+
+    categoryData["unit"] = "%";
     // Draw global limits
     if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_min") || categoryData["settings"].includes("draw_global_limit_max")) {
-
         if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_min"))
             _drawLimit(minMaxValues["globalMin"], categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd");
         if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_max"))
@@ -666,9 +689,9 @@ function _updateCanvas(categoryName, categoryData, canvas) {
 
             // Draw limits
             if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min"))
-                _drawLimit(minValue, categoryData["entries"][key]["min"], categoryData["entries"][key]["max"], categoryData["entries"][key]["unit"], color);
+                _drawLimit(minValue, categoryData["entries"][key]["min"], categoryData["entries"][key]["max"], categoryData["entries"][key]["unit"], color, !autoscale);
             if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_max"))
-                _drawLimit(maxValue, categoryData["entries"][key]["min"], categoryData["entries"][key]["max"], categoryData["entries"][key]["unit"], color);
+                _drawLimit(maxValue, categoryData["entries"][key]["min"], categoryData["entries"][key]["max"], categoryData["entries"][key]["unit"], color, !autoscale);
             // _drawLimit(avg, key, color, true, "Average: ");
         }
     }
