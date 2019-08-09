@@ -72,7 +72,8 @@ def get_data_as_json(last_server_sync_timestamp):
 
 @app.route('/')
 def index():
-    return render_template("index.html", hostname = socket.gethostname(), data = get_data_as_json(0))
+    # return render_template("index.html", hostname = socket.gethostname(), data = get_data_as_json(0))
+    return render_template("index.html", hostname = socket.gethostname())
 
 @socketio.on('request_data')
 def handle_my_custom_event(json_data):
