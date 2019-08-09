@@ -25,9 +25,11 @@ const INACTIVE_COLOR = "#777";
 const timeRanges = [60, 60*5, 60*10, 60*30, 60*60, 60*60 * 6, 60*60 * 12, 60*60*24];
 
 const INCLUDE_CURRENT_VALUE = false;
-const autoscale = true;
+const autoscale = true; // TODO should be category setting
 const autoScaleOuterSpaceFactor = 0.1;
 
+const drawSnappingCircles = true; // TODO should be category setting
+const useSnappedValueColorForCursor = true;
 
 // Members
 let _cursorPos = 0; // timestamp
@@ -290,8 +292,8 @@ function getCursorTime() {
     return _cursorPos;
 }
 
-function _getValueAtCursor(categoryData, key) {
-    let allValues = _getValuesForVisibleTimeRange(categoryData, key);
+function _getValueAtCursor(categoryData, label) {
+    let allValues = _getValuesForVisibleTimeRange(categoryData, label); // ASDF cursor snapping should work for all labels not just [0]
     let cursorTimestamp = getCursorTime();
 
     let i = 0;
@@ -320,27 +322,27 @@ function _getValueAtCursor(categoryData, key) {
 
 function _updateBars(categoryData, categoryName) {
 
-    for (const key of Object.keys(categoryData["entries"])) { // TODO rename key to label
-        const color = _getElementColor(categoryName, key);
+    for (const label of Object.keys(categoryData["entries"])) {
+        const color = _getElementColor(categoryName, label);
 
         // Label
-        elements[categoryName].labels[key]["label"].innerText = key;
+        elements[categoryName].labels[label]["label"].innerText = label;
 
         // Value
-        const value = _getValueAtCursor(categoryData, key)[1];
+        const value = _getValueAtCursor(categoryData, label)[1];
 
-        if (categoryData["entries"][key]["unit"] == "byte") {
-            elements[categoryName].labels[key]["value"].innerText = humanizeBytes(value);
+        if (categoryData["entries"][label]["unit"] == "byte") {
+            elements[categoryName].labels[label]["value"].innerText = humanizeBytes(value);
         } else {
-            elements[categoryName].labels[key]["value"].innerText = (Math.round(value * 100) / 100) + categoryData["entries"][key]["unit"];
+            elements[categoryName].labels[label]["value"].innerText = (Math.round(value * 100) / 100) + categoryData["entries"][label]["unit"];
         }
 
         // Bar
-        let min = categoryData["entries"][key]["min"];
-        let max = categoryData["entries"][key]["max"];
+        let min = categoryData["entries"][label]["min"];
+        let max = categoryData["entries"][label]["max"];
         let neededPerc = ((value - min) / (max - min));
         let text = "";
-        let canvas = elements[categoryName].labels[key]["bar"];
+        let canvas = elements[categoryName].labels[label]["bar"];
 
         let width = canvas.scrollWidth;
         let height = canvas.scrollHeight;
@@ -350,7 +352,7 @@ function _updateBars(categoryData, categoryName) {
         let ctx = canvas.getContext("2d");
         let indicatorSize = 3;
 
-        let catElement = elements[categoryName].labels[key]
+        let catElement = elements[categoryName].labels[label]
 
         ctx.strokeStyle = catElement["active"] ? catElement["color"] : color;
         ctx.lineWidth = height;
@@ -495,7 +497,7 @@ function _updateCanvas(categoryName, categoryData, canvas) {
     if (categoryData["settings"].includes("nograph"))
         return;
 
-    let keys = _getActiveEntries(categoryName, categoryData);
+    let labels = _getActiveEntries(categoryName, categoryData);
     let ctx = canvas.getContext("2d");
 
     // TODO why do this on update, wouldnt it be sufficient to do it when creating?
@@ -511,14 +513,14 @@ function _updateCanvas(categoryName, categoryData, canvas) {
     minMaxValues["globalMin"] = Infinity;
     minMaxValues["globalMax"] = -Infinity;
 
-    for (const key of keys) {
+    for (const label of labels) {
         let minValue = Infinity;
         let maxValue = -Infinity;
         let avg = 0;
         let avgCounter = 0;
 
         // find min / max values
-        let allValues = _getValuesForVisibleTimeRange(categoryData, key);
+        let allValues = _getValuesForVisibleTimeRange(categoryData, label);
 
         for (let i = 1; i < allValues.length; ++i)
         {
@@ -535,11 +537,11 @@ function _updateCanvas(categoryName, categoryData, canvas) {
 
         avg /= avgCounter;
 
-        minMaxValues[key] = {};
-        minMaxValues[key]["min"] = minValue;
-        minMaxValues[key]["max"] = maxValue;
+        minMaxValues[label] = {};
+        minMaxValues[label]["min"] = minValue;
+        minMaxValues[label]["max"] = maxValue;
 
-        minMaxValues[key]["avg"] = avg;
+        minMaxValues[label]["avg"] = avg;
     }
 
     function _getX(timestamp) {
@@ -614,16 +616,16 @@ function _updateCanvas(categoryName, categoryData, canvas) {
 
 
     // Create graph lines
-    for (const key of keys) {
-        if (!elements[categoryName].labels[key]["active"])
+    for (const label of labels) {
+        if (!elements[categoryName].labels[label]["active"])
             continue;
 
-        let allValues = _getValuesForVisibleTimeRange(categoryData, key);
-        const color = _getElementColor(categoryName, key);
+        let allValues = _getValuesForVisibleTimeRange(categoryData, label);
+        const color = _getElementColor(categoryName, label);
 
         // Draw graph
-        let minValue = categoryData["entries"][key]["min"];
-        let maxValue = categoryData["entries"][key]["max"];
+        let minValue = categoryData["entries"][label]["min"];
+        let maxValue = categoryData["entries"][label]["max"];
 
         if (autoscale) {
             const range = minMaxValues["globalMax"] - minMaxValues["globalMin"];
@@ -679,20 +681,20 @@ function _updateCanvas(categoryName, categoryData, canvas) {
 
     // Draw individual limits
 
-    for (const key of keys) {
-        // let allValues = _getValuesForVisibleTimeRange(categoryData, key); // was probably used for calculating average?
-        const color = _getElementColor(categoryName, key);
+    for (const label of labels) {
+        // let allValues = _getValuesForVisibleTimeRange(categoryData, label); // was probably used for calculating average?
+        const color = _getElementColor(categoryName, label);
 
         if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min") || categoryData["settings"].includes("draw_individual_limit_max")){
-            const minValue = minMaxValues[key]["min"];
-            const maxValue = minMaxValues[key]["max"];
+            const minValue = minMaxValues[label]["min"];
+            const maxValue = minMaxValues[label]["max"];
 
             // Draw limits
             if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min"))
-                _drawLimit(minValue, categoryData["entries"][key]["min"], categoryData["entries"][key]["max"], categoryData["entries"][key]["unit"], color, !autoscale);
+                _drawLimit(minValue, categoryData["entries"][label]["min"], categoryData["entries"][label]["max"], categoryData["entries"][label]["unit"], color, !autoscale);
             if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_max"))
-                _drawLimit(maxValue, categoryData["entries"][key]["min"], categoryData["entries"][key]["max"], categoryData["entries"][key]["unit"], color, !autoscale);
-            // _drawLimit(avg, key, color, true, "Average: ");
+                _drawLimit(maxValue, categoryData["entries"][label]["min"], categoryData["entries"][label]["max"], categoryData["entries"][label]["unit"], color, !autoscale);
+            // _drawLimit(avg, label, color, true, "Average: ");
         }
     }
 
@@ -734,19 +736,51 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         ctx.fillText(label + text, 10, fontPosY);
     }
 
+    // Snap cursor to closes value (considering all lines)
+    let cursorTimeSnapped;
+    const contenders = {};
+    for (const label of labels) {
+        const snappedValue = _getValueAtCursor(categoryData, label);
+        cursorTimeSnapped = snappedValue[0];
+        cursorTimeSnappedValue = snappedValue[1];
+
+        // Should not 'break' if values would be written to DB in different time steps
+        // But would need to find closest match
+        contenders[label] = (cursorTimeSnapped);
+        if (drawSnappingCircles) {
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = elements[categoryName].getColorForEntry(label);
+            ctx.setLineDash([]);
+            ctx.arc(_getX(cursorTimeSnapped), _getY(categoryData["min"], categoryData["max"], cursorTimeSnappedValue), 15, 0, 360);
+            ctx.stroke();
+        }
+    }
+
+    let contenderLabel = 0; // not needed?
+    let contenderDist = Infinity;
+
+    // for (let i = 0; i < contenders.length; ++i) {
+    for (let label in contenders) {
+        const newDist = Math.abs(getCursorTime() - contenders[label]);
+
+        if (newDist < contenderDist) {
+            contenderDist = newDist;
+            contenderLabel = label;
+        }
+    }
+
+    cursorTimeSnapped = contenders[contenderLabel];
+
     // Draw cursor
-    ctx.strokeStyle = "#0f0";
+    if (useSnappedValueColorForCursor)
+        ctx.strokeStyle = elements[categoryName].getColorForEntry(contenderLabel);
+    else
+        ctx.strokeStyle = "#0f0";
+
     ctx.lineWidth = 1;
     ctx.setLineDash([15, 15]);
 
-    // FIXME key is not needed here
-    let cursorTimeSnapped;
-    for (const key of keys) {
-        cursorTimeSnapped = _getValueAtCursor(categoryData, key)[0];
-        // Should not 'break' if values would be written to DB in different time steps
-        // But would need to find closest match
-        break;
-    }
     const cursorX = _getX(cursorTimeSnapped);
     ctx.beginPath();
     ctx.moveTo(cursorX, 0);

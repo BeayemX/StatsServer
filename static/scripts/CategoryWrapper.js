@@ -158,4 +158,8 @@ class CategoryWrapper {
             _updateCanvas(categoryName, categoryData, this.canvas);
         }
     }
+
+    getColorForEntry(label) {
+        return this.labels[label].color;
+    }
 }

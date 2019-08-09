@@ -97,7 +97,7 @@ def get_data_as_json(last_server_sync_timestamp):
             entries[label] = {}
             entries[label]["value"] = [time.time(), 0] # FIXME there is no current value
             entries[label]["values"] = get_values_for_label(category_key, label, last_server_sync_timestamp)
-            entries[label]["unit"] = " %"
+            entries[label]["unit"] = ""
             entries[label]["min"] = 0
             entries[label]["max"] = 100
 
