@@ -20,9 +20,11 @@ let availableColors = [
 
 const DEFAULT_AUTO_RELOAD = true;
 const DEFAULT_TIME_RANGE = 60*60;
-const RELOAD_MINIMUM_TIME_MS = 2000;
+const RELOAD_MINIMUM_TIME_MS = 500;
 const INACTIVE_COLOR = "#777";
 const timeRanges = [60, 60*5, 60*10, 60*30, 60*60, 60*60 * 6, 60*60 * 12, 60*60*24];
+
+const INCLUDE_CURRENT_VALUE = false;
 
 // Members
 let _cursorPos = 0; // timestamp
@@ -65,6 +67,8 @@ let prepareDataButton;
 
 let timedropdown;
 let customOptionSelect;
+
+
 
 function onLoad() {
     restoreSettings();
@@ -153,6 +157,7 @@ function activateAutoUpdate() {
 }
 
 function handleDataUpdate(data_json_s) {
+    console.log("handleDataUpdate")
     newServerData = JSON.parse(data_json_s);
     log("Handle update... " + humanizeBytes(newServerData["size"]));
 
@@ -192,34 +197,53 @@ function handleDataUpdate(data_json_s) {
     timeDisplay.innerText =  `Last update: ${_timestampToTime(last_server_sync_timestamp)}`;
 
     // Store data on client
+    // TODO maybe special case for initial load not needed?
     if (cachedData == null) // Just started the app, cache new data
     {
         cachedData = newServerData;
 
         // Add current value to values
-        let categories = newServerData["categories"];
-        for (let categoryName in categories)
-        {
-            let categoryData = categories[categoryName];
-            for (let entryName in categoryData["entries"])
+        if (INCLUDE_CURRENT_VALUE) {
+            let categories = newServerData["categories"];
+            for (let categoryName in categories)
             {
-                let entryData = categoryData["entries"][entryName];
-                cachedData["categories"][categoryName]["entries"][entryName]["values"].push([last_server_sync_timestamp, entryData["value"]]); // add current value to values
+                let categoryData = categories[categoryName];
+                for (let label in categoryData["entries"])
+                {
+                    let entryData = categoryData["entries"][label];
+                    cachedData["categories"][categoryName]["entries"][label]["values"].push([last_server_sync_timestamp, entryData["value"]]); // add current value to values
+                }
             }
         }
     } else { // add new values to cached data
+        // TODO extract some variables?
         let categories = newServerData["categories"];
         for (let categoryName in categories)
         {
             let categoryData = categories[categoryName];
-            for (let entryName in categoryData["entries"])
+            for (let label in categoryData["entries"])
             {
-                let entryData = categoryData["entries"][entryName];
-                cachedData["categories"][categoryName]["entries"][entryName]["value"] = entryData["value"];
+                let entryData = categoryData["entries"][label];
+                if (INCLUDE_CURRENT_VALUE) {
+                    cachedData["categories"][categoryName]["entries"][label]["value"] = entryData["value"];
+                }
 
-                cachedData["categories"][categoryName]["entries"][entryName]["values"].pop(); // remove ["value"] previously added
-                cachedData["categories"][categoryName]["entries"][entryName]["values"] = cachedData["categories"][categoryName]["entries"][entryName]["values"].concat(entryData["values"]); // add new value-list to cached value-list
-                cachedData["categories"][categoryName]["entries"][entryName]["values"].push([last_server_sync_timestamp, entryData["value"]]); // add current value to values
+                if (INCLUDE_CURRENT_VALUE)
+                    cachedData["categories"][categoryName]["entries"][label]["values"].pop(); // remove PREVIOUS current ["value"]
+                if (cachedData["categories"][categoryName]) {
+                    if (cachedData["categories"][categoryName]["entries"][label]) {
+                        cachedData["categories"][categoryName]["entries"][label]["values"] = cachedData["categories"][categoryName]["entries"][label]["values"].concat(entryData["values"]); // add new value-list to cached value-list
+                    } else { // new label, not existing on initial load
+                        cachedData["categories"][categoryName]["entries"][label] = entryData;
+                        elements[categoryName]._generateLabelEntry(label, categoryName, categoryData);
+                    }
+                } else { // new category, not existing on initial load
+                    cachedData["categories"][categoryName] = newServerData["categories"][categoryName]
+                    _createDomCategory(categoryName, newServerData["categories"][categoryName])
+                }
+                if (INCLUDE_CURRENT_VALUE) {
+                    cachedData["categories"][categoryName]["entries"][label]["values"].push([last_server_sync_timestamp, entryData["value"]]); // add NEW current value to values
+                }
             }
         }
     }
@@ -227,16 +251,19 @@ function handleDataUpdate(data_json_s) {
     // Initial creation of dom tree
     if (elements == null) {
         elements = {};
-        let categories = newServerData["categories"];
+        let categories = newServerData["categories"]; // TODO use cached data?
         for (let category in categories) {
             let categoryData = categories[category];
-            console.log(category);
-            console.log(categoryData);
-            _generateEntry(category, Object.keys(categoryData["entries"]), categoryData);
+            _createDomCategory(category, categoryData)
         }
     }
 
     _updateGraphs();
+}
+function _createDomCategory(category, categoryData) {
+    console.log(category);
+    console.log(categoryData);
+    _generateEntry(category, Object.keys(categoryData["entries"]), categoryData);
 }
 
 function _updateGraphs() {
@@ -252,7 +279,7 @@ function _updateGraphs() {
 
         let categoryData = cachedData["categories"][categoryName]
         _updateBars(categoryData, categoryName);
-        _updateCanvas(categoryName, categoryData, elements[categoryName]["canvas"]);
+        _updateCanvas(categoryName, categoryData, elements[categoryName].canvas);
     }
 }
 
@@ -290,19 +317,19 @@ function _getValueAtCursor(categoryData, key) {
 
 function _updateBars(categoryData, categoryName) {
 
-    for (const key of Object.keys(categoryData["entries"])) {
+    for (const key of Object.keys(categoryData["entries"])) { // TODO rename key to label
         const color = _getElementColor(categoryName, key);
 
         // Label
-        elements[categoryName][key]["label"].innerText = key;
+        elements[categoryName].labels[key]["label"].innerText = key;
 
         // Value
-        let value = _getValueAtCursor(categoryData, key)[1];
+        const value = _getValueAtCursor(categoryData, key)[1];
 
         if (categoryData["entries"][key]["unit"] == "byte") {
-            elements[categoryName][key]["value"].innerText = humanizeBytes(value);
+            elements[categoryName].labels[key]["value"].innerText = humanizeBytes(value);
         } else {
-            elements[categoryName][key]["value"].innerText = (Math.round(value * 100) / 100) + categoryData["entries"][key]["unit"];
+            elements[categoryName].labels[key]["value"].innerText = (Math.round(value * 100) / 100) + categoryData["entries"][key]["unit"];
         }
 
         // Bar
@@ -310,7 +337,7 @@ function _updateBars(categoryData, categoryName) {
         let max = categoryData["entries"][key]["max"];
         let neededPerc = ((value - min) / (max - min));
         let text = "";
-        let canvas = elements[categoryName][key]["bar"];
+        let canvas = elements[categoryName].labels[key]["bar"];
 
         let width = canvas.scrollWidth;
         let height = canvas.scrollHeight;
@@ -320,7 +347,7 @@ function _updateBars(categoryData, categoryName) {
         let ctx = canvas.getContext("2d");
         let indicatorSize = 3;
 
-        let catElement = elements[categoryName][key]
+        let catElement = elements[categoryName].labels[key]
 
         ctx.strokeStyle = catElement["active"] ? catElement["color"] : color;
         ctx.lineWidth = height;
@@ -454,7 +481,7 @@ function _getActiveEntries(categoryName, categoryData) {
 
     for (const entryName of Object.keys(categoryData["entries"]))
     {
-        if (elements[categoryName][entryName]["active"])
+        if (elements[categoryName].labels[entryName]["active"])
             activeEntries.push(entryName);
     }
 
@@ -583,7 +610,7 @@ function _updateCanvas(categoryName, categoryData, canvas) {
 
     // Create graph lines
     for (const key of keys) {
-        if (!elements[categoryName][key]["active"])
+        if (!elements[categoryName].labels[key]["active"])
             continue;
 
         let allValues = _getValuesForVisibleTimeRange(categoryData, key);
@@ -630,7 +657,7 @@ function _updateCanvas(categoryName, categoryData, canvas) {
     // Draw individual limits
 
     for (const key of keys) {
-        let allValues = _getValuesForVisibleTimeRange(categoryData, key);
+        // let allValues = _getValuesForVisibleTimeRange(categoryData, key); // was probably used for calculating average?
         const color = _getElementColor(categoryName, key);
 
         if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min") || categoryData["settings"].includes("draw_individual_limit_max")){
@@ -732,126 +759,14 @@ function _updateCanvas(categoryName, categoryData, canvas) {
     ctx.fillText(text, fontPosX, fontPosY);
 }
 
-function _generateEntry(category, keys, categoryData) {
-    categoryElements = {};
-
+function _generateEntry(category, labels, categoryData) {
     // Create text table rows
     let table = document.getElementById("table");
 
-    let graphWrapper = document.createElement("div");
-    let att = document.createAttribute("class");
-    att.value = "graphWrapper";
-    graphWrapper.setAttributeNode(att);
+    const categoryDiv = new CategoryWrapper(category, labels, categoryData);
+    elements[category] = categoryDiv;
 
-    // Create category title
-    let tr = document.createElement("tr");
-    att = document.createAttribute("class");
-    att.value = "tr categoryTitle";
-    tr.setAttributeNode(att);
-    tr.innerText = category.toUpperCase();
-
-    graphWrapper.appendChild(tr);
-
-    // Create rows
-    for (const key of keys)
-    {
-        const rowElement = {};
-        const color = categoryData["settings"].includes("monochrome") ? getColor(0): getNextColor();
-
-        rowElement["active"] = true;
-        rowElement["color"] = color;
-
-        // Only use different colors if there is a graph
-        // if (!categoryData["settings"].includes("nograph"))
-
-        tr = document.createElement("div");
-        att = document.createAttribute("class");
-        att.value = "tr";
-        tr.setAttributeNode(att);
-        tr.onmousedown = (evt) => {_categoryRowPressed(evt, rowElement, categoryData, category);};
-        rowElement["tr"] = tr;
-
-        // Label
-        td = document.createElement("td");
-        att = document.createAttribute("class");
-        att.value = "td collabel";
-        td.setAttributeNode(att);
-
-        rowElement["label"] = td;
-
-        tr.appendChild(td);
-
-        // Value
-        td = document.createElement("td");
-        att = document.createAttribute("class");
-        att.value = "td colval";
-        td.setAttributeNode(att);
-
-        rowElement["value"] = td;
-        tr.appendChild(td);
-
-        att = document.createAttribute("align");
-        att.value = "right";
-        td.setAttributeNode(att);
-
-        // Bar
-        td = document.createElement("td");
-        att = document.createAttribute("class");
-        att.value = "td";
-        td.setAttributeNode(att);
-
-        att = document.createAttribute("align");
-        att.value = "right";
-        td.setAttributeNode(att);
-
-        att = document.createAttribute("class");
-        att.value = "td bar";
-        td.setAttributeNode(att);
-
-        let canvas = document.createElement("canvas");
-        td.appendChild(canvas);
-
-        rowElement["bar"] = canvas;
-
-        tr.appendChild(td);
-
-        att = document.createAttribute("style");
-        att.value = "color:" + color;
-        tr.setAttributeNode(att);
-        graphWrapper.appendChild(tr);
-
-        categoryElements[key] = rowElement;
-    }
-    resetColors();
-
-
-    // do once
-    // create canvas
-    if (!categoryData["settings"].includes("nograph"))
-    {
-        tr = document.createElement("tr");
-        att = document.createAttribute("class");
-        att.value = "tr canvastd";
-        tr.setAttributeNode(att);
-
-        let canvas = document.createElement("canvas");
-        canvas.onmousedown = (ev) => {_onCanvasMouseDown(ev, canvas)};
-        canvas.onmouseup = (ev) => {_onCanvasMouseUp(ev, canvas)};
-        canvas.onmousemove = (ev) => {_onCanvasMouseMove(ev, canvas)};
-
-        canvas.ontouchstart = (ev) => {_onCanvasMouseDown(ev, canvas)};
-        canvas.ontouchend = (ev) => {_onCanvasMouseUp(ev, canvas)};
-        canvas.ontouchmove = (ev) => {_onCanvasMouseMove(ev, canvas)};
-
-        tr.appendChild(canvas);
-        graphWrapper.appendChild(tr);
-
-        // Done building DOM-Tree.
-        categoryElements["canvas"] = canvas;
-        categoryElements["div"] = tr;
-    }
-    elements[category] = categoryElements;
-    table.appendChild(graphWrapper);
+    table.appendChild(categoryDiv.wrapper);
 }
 
 function storeSettings() {
@@ -897,10 +812,12 @@ function reloadOnce() {
 
 function _updateReloadState() {
     if (autoReload) {
-        reloadState.innerHTML = ("Reloading data");
+        //reloadState.innerHTML = ("&#x25BA;");
+        reloadState.innerHTML = ("Live updates");
         reloadState.style.color = "#000";
         reloadState.style.backgroundColor = "#33a130"; // green
     } else {
+        //reloadState.innerHTML = ("&#x25A0;");
         reloadState.innerHTML = ("Paused");
         reloadState.style.color = "#ddd";
         reloadState.style.backgroundColor = "#666";
@@ -1200,52 +1117,10 @@ function _humanizeTime(sec) {
     return text;
 }
 
-let colorCounter = 0;
-
 function getColor(idx) {
     return availableColors[idx % availableColors.length];
 }
 
-function getNextColor() {
-    const color = availableColors[colorCounter % availableColors.length];
-    ++colorCounter;
-
-    return color;
-}
-
-function resetColors() {
-    colorCounter = 0;
-}
-
-function _categoryRowPressed(evt, rowElement, categoryData, categoryName) {
-    if (categoryData["settings"].includes("nograph"))
-        return;
-
-    const oldActive = rowElement["active"];
-    const newActive = !oldActive
-    const color = newActive ? rowElement["color"] : INACTIVE_COLOR;
-    const att = document.createAttribute("style");
-
-    rowElement["active"] = newActive;
-
-    att.value = "color:" + color;
-    rowElement["tr"].setAttributeNode(att);
-
-    _updateBars(categoryData, categoryName);
-
-    if (_getActiveEntries(categoryName, categoryData).length == 0)
-    {
-        elements[categoryName]["canvas"].remove();
-    } else {
-        if (oldActive == false && newActive == true)
-        {
-            elements[categoryName]["div"].appendChild(elements[categoryName]["canvas"]);
-        }
-
-        _updateCanvas(categoryName, categoryData, elements[categoryName]["canvas"]);
-    }
-}
-
-function _getElementColor(categoryName, key) {
-    return elements[categoryName][key]["active"] ? elements[categoryName][key]["color"] : INACTIVE_COLOR;
+function _getElementColor(categoryName, label) {
+    return elements[categoryName].labels[label]["active"] ? elements[categoryName].labels[label]["color"] : INACTIVE_COLOR;
 }
