@@ -162,13 +162,12 @@ class CategoryWrapper {
     }
 
     _sortLabelEntries() {
-
         let colorCounter = 0;
 
         let items = Object.keys(this.labels).map((key) =>  {
             return [key, this.labels[key]];
         });
-        // Sort the array based on the second element
+
         items.sort((first, second) => {
             return first[1]["label"].innerText.localeCompare(second[1]["label"].innerText);
         });
@@ -187,7 +186,6 @@ class CategoryWrapper {
         // if entry is added during runtime
         // make sure that canvas is the last displayed element
         if (this.canvas) {
-            console.log("should move canvas to back")
             // move div containing the graph to last position
             this.wrapper.appendChild(this.div);
         }
