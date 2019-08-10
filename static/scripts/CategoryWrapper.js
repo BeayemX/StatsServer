@@ -88,10 +88,10 @@ class CategoryWrapper {
 
     _generateLabelEntry(label, category, categoryData) {
         const graphWrapper = this.wrapper;
-        this.colorCounter += 1
-
         const rowElement = {};
+
         const color = categoryData["settings"].includes("monochrome") ? getColor(0): getColor(this.colorCounter);
+        this.colorCounter += 1
 
         rowElement["active"] = true;
         rowElement["color"] = color;
