@@ -6,7 +6,7 @@ class CategoryWrapper {
 
         // Configuration
         this.autoScale = true;
-        this.showCircleHighlight = false;
+        this.showCircleHighlight = true;
 
         // Members
         this.labels = {}
