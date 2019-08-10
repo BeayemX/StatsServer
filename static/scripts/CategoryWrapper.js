@@ -173,15 +173,6 @@ class CategoryWrapper {
             return first[1]["label"].innerText.localeCompare(second[1]["label"].innerText);
         });
 
-
-        // if entry is added during runtime
-        // make sure that canvas is the last displayed element
-        if (this.canvas) {
-            console.log("should move canvas to back")
-            // move div containing the graph to last position
-            this.wrapper.appendChild(this.div);
-        }
-
         for (let item of items) {
             const color = this.initialCategoryData["settings"].includes("monochrome") ? getColor(0): getColor(colorCounter);
             item[1]["color"] = color;
@@ -191,6 +182,14 @@ class CategoryWrapper {
             this.wrapper.appendChild(htmlNode);
 
             colorCounter += 1;
+        }
+
+        // if entry is added during runtime
+        // make sure that canvas is the last displayed element
+        if (this.canvas) {
+            console.log("should move canvas to back")
+            // move div containing the graph to last position
+            this.wrapper.appendChild(this.div);
         }
     }
 
