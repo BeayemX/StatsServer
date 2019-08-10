@@ -747,7 +747,7 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         ctx.fillText(label + text, 10, fontPosY);
     }
 
-    // Snap cursor to closes value (considering all lines)
+    // Snap cursor to closest value (considering all lines)
     let cursorTimeSnapped;
     const contenders = {};
     for (const label of labels) {
@@ -1033,7 +1033,6 @@ function _onCanvasMouseDown(ev, canvas) {
         _onCanvasMouseUp(ev); // cancel one-touch stuff
         currentPinchDiff = Math.abs(ev.touches[0].clientX - ev.touches[1].clientX);
     }
-
 }
 
 function _onCanvasMouseUp(ev, canvas) {
