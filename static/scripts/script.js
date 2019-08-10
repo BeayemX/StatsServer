@@ -25,10 +25,8 @@ const INACTIVE_COLOR = "#777";
 const timeRanges = [60, 60*5, 60*10, 60*30, 60*60, 60*60 * 6, 60*60 * 12, 60*60*24];
 
 const INCLUDE_CURRENT_VALUE = false;
-const autoscale = true; // TODO should be category setting
 const autoScaleOuterSpaceFactor = 0.1;
 
-const drawSnappingCircles = true; // TODO should be category setting
 const useSnappedValueColorForCursor = true;
 
 // Members
@@ -760,7 +758,7 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         // Should not 'break' if values would be written to DB in different time steps
         // But would need to find closest match
         contenders[label] = (cursorTimeSnapped);
-        if (drawSnappingCircles) {
+        if (elements[categoryName].showCircleHighlight) {
             ctx.beginPath();
             ctx.lineWidth = 2;
             ctx.strokeStyle = elements[categoryName].getColorForEntry(label);

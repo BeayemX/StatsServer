@@ -5,6 +5,7 @@ class CategoryWrapper {
 
         // Configuration
         this.autoScale = true;
+        this.showCircleHighlight = false;
 
         // Members
         this.labels = {}
@@ -28,7 +29,8 @@ class CategoryWrapper {
         att = document.createAttribute("class");
         att.value = "tr categoryTitle";
         leftIcons.setAttributeNode(att);
-        leftIcons.innerText = "[]";
+        leftIcons.innerText = "◯";
+        leftIcons.onmousedown = (evt) => this.toggleCircleHighlight();
         categoryHeader.appendChild(leftIcons);
 
 
@@ -199,6 +201,11 @@ class CategoryWrapper {
 
     toggleAutoScale() {
         this.autoScale = !this.autoScale;
+        _updateCanvas(this.category, cachedData["categories"][this.category], this.canvas);
+    }
+
+    toggleCircleHighlight() {
+        this.showCircleHighlight = !this.showCircleHighlight;
         _updateCanvas(this.category, cachedData["categories"][this.category], this.canvas);
     }
 }
