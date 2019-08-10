@@ -529,7 +529,7 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         // find min / max values
         let allValues = _getValuesForVisibleTimeRange(categoryData, label);
 
-        for (let i = 1; i < allValues.length; ++i)
+        for (let i = 0; i < allValues.length; ++i)
         {
             let actualValue = allValues[i][1];
             minValue = Math.min(minValue, actualValue);
