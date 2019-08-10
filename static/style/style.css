@@ -124,15 +124,15 @@ body {
     overflow: auto;
     flex-grow: 1;
 }
+.categoryHeader{
+    border-bottom: 5px solid #333;
+    margin-bottom: 4%;
+}
 .categoryTitle {
     color: #ddd;
     font-weight: bold;
     letter-spacing: 3pt;
     justify-content: center;
-    /*
-    */
-    border-bottom: 5px solid #333;
-    margin-bottom: 4%;
 }
 .collabel {
     width: 30%;

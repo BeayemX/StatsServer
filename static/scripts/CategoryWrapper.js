@@ -1,22 +1,55 @@
 class CategoryWrapper {
     constructor(category, labels, categoryData) {
-        this.colorCounter = 0;
+        // Caching, not sure if needed
+        this.category = category;
+
+        // Configuration
+        this.autoScale = true;
+
+        // Members
         this.labels = {}
-
         this.wrapper = document.createElement("div");
+        this.colorCounter = 0;
 
+        // Initialization
         let att = document.createAttribute("class");
         att.value = "graphWrapper";
         this.wrapper.setAttributeNode(att);
 
         // Create category title
-        let tr = document.createElement("tr");
+        const categoryHeader = document.createElement("div");
+
+        att = document.createAttribute("class");
+        att.value = "tr categoryHeader";
+        categoryHeader.setAttributeNode(att);
+
+
+        const leftIcons = document.createElement("div");
         att = document.createAttribute("class");
         att.value = "tr categoryTitle";
-        tr.setAttributeNode(att);
-        tr.innerText = category.toUpperCase();
+        leftIcons.setAttributeNode(att);
+        leftIcons.innerText = "[]";
+        categoryHeader.appendChild(leftIcons);
 
-        this.wrapper.appendChild(tr);
+
+        const headerLabel = document.createElement("div");
+        att = document.createAttribute("class");
+        att.value = "tr categoryTitle";
+        headerLabel.setAttributeNode(att);
+        headerLabel.innerText = category.toUpperCase();
+        categoryHeader.appendChild(headerLabel);
+
+        // right icons
+        const rightIcons = document.createElement("div");
+        att = document.createAttribute("class");
+        att.value = "tr categoryTitle";
+        rightIcons.setAttributeNode(att);
+        rightIcons.innerText = "↕";
+        rightIcons.onmousedown = (evt) => this.toggleAutoScale();
+        categoryHeader.appendChild(rightIcons);
+
+
+        this.wrapper.appendChild(categoryHeader);
 
         // Create rows
         for (const label of labels) {
@@ -25,6 +58,7 @@ class CategoryWrapper {
 
         // do once
         // create canvas
+        let tr;
         if (!categoryData["settings"].includes("nograph"))
         {
             tr = document.createElement("tr");
@@ -161,5 +195,10 @@ class CategoryWrapper {
 
     getColorForEntry(label) {
         return this.labels[label].color;
+    }
+
+    toggleAutoScale() {
+        this.autoScale = !this.autoScale;
+        _updateCanvas(this.category, cachedData["categories"][this.category], this.canvas);
     }
 }

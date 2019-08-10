@@ -636,7 +636,7 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         let minValue = categoryData["entries"][label]["min"];
         let maxValue = categoryData["entries"][label]["max"];
 
-        if (autoscale) {
+        if (elements[categoryName].autoScale) {
             const range = minMaxValues["globalMax"] - minMaxValues["globalMin"];
 
             minValue = minMaxValues["globalMin"] - range * autoScaleOuterSpaceFactor;
@@ -661,15 +661,19 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         }
         ctx.stroke();
     }
+    // HACK, due to missing min/max information
+    categoryData["min"] = 0
+    categoryData["max"] = 100
+    let usedMin = categoryData["min"];
+    let usedMax = categoryData["max"];
 
-    // HACK
-    categoryData["min"] = minMaxValues["globalMin"];
-    categoryData["max"] = minMaxValues["globalMax"];
+    if (elements[categoryName].autoScale) {
+        usedMin = minMaxValues["globalMin"];
+        usedMax = minMaxValues["globalMax"];
 
-    if (autoscale) {
         const range = minMaxValues["globalMax"] - minMaxValues["globalMin"];
-        categoryData["min"] = minMaxValues["globalMin"] - range * autoScaleOuterSpaceFactor;
-        categoryData["max"] = minMaxValues["globalMax"] + range * autoScaleOuterSpaceFactor;
+        usedMin = minMaxValues["globalMin"] - range * autoScaleOuterSpaceFactor;
+        usedMax = minMaxValues["globalMax"] + range * autoScaleOuterSpaceFactor;
     }
     // HACK end
 
@@ -677,15 +681,15 @@ function _updateCanvas(categoryName, categoryData, canvas) {
     // Draw global limits
     if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_min") || categoryData["settings"].includes("draw_global_limit_max")) {
         if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_min"))
-            _drawLimit(minMaxValues["globalMin"], categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd");
+            _drawLimit(minMaxValues["globalMin"], usedMin, usedMax, categoryData["unit"], "#ddd");
         if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_max"))
-            _drawLimit(minMaxValues["globalMax"], categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd");
+            _drawLimit(minMaxValues["globalMax"], usedMin, usedMax, categoryData["unit"], "#ddd");
     }
     if (categoryData["settings"].includes("draw_outer_limits") || categoryData["settings"].includes("draw_outer_limit_min")) {
-        _drawLimit(categoryData["min"], categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd", false);
+        _drawLimit(usedMin, usedMin, usedMax, categoryData["unit"], "#ddd", false);
     }
     if (categoryData["settings"].includes("draw_outer_limits") || categoryData["settings"].includes("draw_outer_limit_max")) {
-        _drawLimit(categoryData["max"], categoryData["min"], categoryData["max"], categoryData["unit"], "#ddd", false);
+        _drawLimit(usedMax, usedMin, usedMax, categoryData["unit"], "#ddd", false);
     }
 
     // Draw individual limits
@@ -694,15 +698,15 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         // let allValues = _getValuesForVisibleTimeRange(categoryData, label); // was probably used for calculating average?
         const color = _getElementColor(categoryName, label);
 
-        if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min") || categoryData["settings"].includes("draw_individual_limit_max")){
+        if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min") || categoryData["settings"].includes("draw_individual_limit_max")) {
             const minValue = minMaxValues[label]["min"];
             const maxValue = minMaxValues[label]["max"];
 
             // Draw limits
             if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min"))
-                _drawLimit(minValue, categoryData["entries"][label]["min"], categoryData["entries"][label]["max"], categoryData["entries"][label]["unit"], color, !autoscale);
+                _drawLimit(minValue, categoryData["entries"][label]["min"], categoryData["entries"][label]["max"], categoryData["entries"][label]["unit"], color, !elements[categoryName].autoScale);
             if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_max"))
-                _drawLimit(maxValue, categoryData["entries"][label]["min"], categoryData["entries"][label]["max"], categoryData["entries"][label]["unit"], color, !autoscale);
+                _drawLimit(maxValue, categoryData["entries"][label]["min"], categoryData["entries"][label]["max"], categoryData["entries"][label]["unit"], color, !elements[categoryName].autoScale);
             // _drawLimit(avg, label, color, true, "Average: ");
         }
     }
@@ -761,7 +765,7 @@ function _updateCanvas(categoryName, categoryData, canvas) {
             ctx.lineWidth = 2;
             ctx.strokeStyle = elements[categoryName].getColorForEntry(label);
             ctx.setLineDash([]);
-            ctx.arc(_getX(cursorTimeSnapped), _getY(categoryData["min"], categoryData["max"], cursorTimeSnappedValue), 15, 0, 360);
+            ctx.arc(_getX(cursorTimeSnapped), _getY(usedMin, usedMax, cursorTimeSnappedValue), 15, 0, 360);
             ctx.stroke();
         }
     }
