@@ -306,6 +306,8 @@ def multi_thread_gathering():
         t = threading.Thread(target=thread_gathering, args=(func, thread_id, category, sleep_time))
         threads[thread_id] = t
 
+    threads["CleanUp"] = threading.Thread(target=thread_clean_up_database)
+
     # TODO use list comprehension
     # [t.start() for t in threads.values()]
     # [t.join() for t in threads.values()]
@@ -344,9 +346,24 @@ def thread_gathering(func, thread_id, category, sleep_time):
         delta = end_time - start_time
 
         actual_sleep_time = max(0, sleep_time - delta)
-        print(thread_id.ljust(32), str(actual_sleep_time))
+        # print(thread_id.ljust(32), str(actual_sleep_time))
+        print(thread_id.ljust(32), str(delta))
 
         time.sleep(actual_sleep_time)
+
+def thread_clean_up_database():
+    while True:
+        current_time = time.time()
+        with connect(DB_FILE) as conn:
+            cursor = conn.cursor()
+            sql = 'DELETE FROM data WHERE ROWID IN (SELECT ROWID FROM data WHERE time < ?)'
+            args = (current_time - MAX_AGE, )
+            cursor.execute(sql, args)
+
+        delta_time = time.time() - current_time
+        print("[ Clean Up ]".ljust(32), str(delta_time))
+        time.sleep(60*5)
+
 
 
 # Run main program
