@@ -1,5 +1,6 @@
 # Standard library
 import os
+import threading
 import time
 import math, random, datetime # Needed for test values
 from sqlite3 import connect
@@ -8,26 +9,42 @@ import configparser
 # PIP
 import psutil
 
+# Network
+import requests
+
+
+threads = {}
 
 # Load settings from config file
 conf = configparser.ConfigParser()
 conf.read(os.path.join(os.path.dirname(__file__),"settings.conf"))
 
-DB_DIR = conf["Generator"]["DatabaseDirectory"]
-DB_FILE = os.path.join(DB_DIR, conf["Generator"]["DatabaseName"])
-TIME_STEP = conf["Generator"].getfloat("Timestep")
+NETWORK_TIME_STEP = 10
+
+DB_DIRECTORY = conf["Generator"]["DatabaseDirectory"]
+DB_FILE = conf["Generator"]["DatabaseName"]
+DB_FULL_PATH = os.path.join(DB_DIRECTORY, DB_FILE)
+
 MAX_AGE = conf["Generator"].getfloat("MaxAge") # in seconds
 MAX_NETWORK_SPEED = conf["Generator"].getfloat("MaxNetworkSpeed") # in Byte
-MAX_NETWORK_SPEED *= TIME_STEP
+MAX_NETWORK_SPEED *= NETWORK_TIME_STEP
 USE_DELTA_COMPRESSION = conf["General"].getboolean("UseDeltaCompression")
+
+REST_PORT = conf["REST Server"].getint("Port")
+DEBUG = conf["Server"].getboolean("Debug")
+
+REST_COMMUNICATION = conf["Generator"].getboolean("CommunicateOverRest")
 
 # Network variables
 sent_byte = psutil.net_io_counters()[0]
 received_byte = psutil.net_io_counters()[1]
 
+# Load variables
+MAX_LOAD = psutil.cpu_count()
+
 # Create database directory if it does not exist
-if not os.path.exists(DB_DIR):
-    os.makedirs(DB_DIR)
+if not os.path.exists(DB_DIRECTORY):
+    os.makedirs(DB_DIRECTORY)
 
 
 def add_database_entry(cursor, category, label, value):
@@ -41,22 +58,6 @@ def clean_up_database(cursor):
     sql = 'DELETE FROM data WHERE ROWID IN (SELECT ROWID FROM data WHERE time < ?)'
     args = (current_time - MAX_AGE, )
     cursor.execute(sql, args)
-
-def gather_data():
-    data = {}
-
-    # add_sinus_entries(data) # Testing
-    # add_random_entries(data) # Testing
-    # add_linear_entries(data) # Testing
-
-    add_cpu_entries(data)
-    add_load_entries(data)
-    add_temperature_entries(data)
-    add_memory_entries(data)
-    add_disk_entries(data)
-    add_network_entries(data)
-
-    return data
 
 def create_category(*settings):
     return {
@@ -72,57 +73,11 @@ def create_category_entry(value, unit="", minVal=0, maxVal=100):
         "max": maxVal
     }
 
-def add_sinus_entries(data):
-    category = create_category()
-
-    curr_time = time.time()
-
-    for speed in [1.0, 3.0, 10.0, 60.0, 60.0 * 10]:
-        value = math.sin(curr_time / speed)
-        entry = create_category_entry(value, "", -1.5, 1.5)
-        category["entries"][f"Sine{int(speed)}"] = entry
-
-    data["test values"] = category
-
-def add_random_entries(data):
-    category = create_category()
-
-    for i in range(8):
-        rand_value = 1
-        for j in range(i):
-             rand_value *= random.random()
-
-        entry = create_category_entry(rand_value, "", -0.5, 1.5)
-        category["entries"][f"Random{i}"] = entry
-
-    data["random values"] = category
-
-def add_linear_entries(data):
-    category = create_category()
-
-    now = datetime.datetime.now()
-
-    # Hour
-    entry = create_category_entry(now.hour, "h", 0, 24)
-    category["entries"]["Hours"] = entry
-
-    # Minute
-    entry = create_category_entry(now.minute, "m", 0, 60)
-    category["entries"]["Minutes"] = entry
-
-    # Second
-    entry = create_category_entry(now.second, "m", 0, 60)
-    category["entries"]["Seconds"] = entry
-
-    data["time"] = category
-
 def add_load_entries(data):
     category = create_category("draw_individual_limits", "draw_outer_limit_min", "draw_outer_limit_max")
 
-    max_value = psutil.cpu_count()
-
     category["min"] = 0
-    category["max"] = max_value
+    category["max"] = MAX_LOAD
     category["unit"] = ""
 
     category["entries"] = _get_load_entries()
@@ -131,9 +86,9 @@ def add_load_entries(data):
 def _get_load_entries():
     entries = {}
     loads = os.getloadavg()
-    entries["Load 1"] = loads[0] # create_category_entry(loads[0], "", 0, max_value)
-    entries["Load 5"] = loads[1] # create_category_entry(loads[1], "", 0, max_value)
-    entries["Load 15"] = loads[2] # create_category_entry(loads[2], "", 0, max_value)
+    entries["Load 1"] = create_category_entry(loads[0], "", 0, MAX_LOAD)
+    entries["Load 5"] = create_category_entry(loads[1], "", 0, MAX_LOAD)
+    entries["Load 15"] = create_category_entry(loads[2], "", 0, MAX_LOAD)
     return entries
 
 def add_cpu_entries(data):
@@ -199,10 +154,10 @@ def add_disk_entries(data):
 def _get_disk_entries():
     entries = {}
 
-    for name, path in [("Disk", "/"), ("Ram disk", DB_DIR)]:
+    for name, path in [("Disk", "/"), ("Ram disk", DB_DIRECTORY)]:
         entries[name] = create_category_entry(psutil.disk_usage(path).used, "byte", 0, psutil.disk_usage(path).total)
 
-    entries["DB file size"] = create_category_entry(os.path.getsize(os.path.join(DB_DIR, DB_FILE)), "byte", 0, psutil.disk_usage(DB_DIR).total)
+    entries["DB file size"] = create_category_entry(os.path.getsize(DB_FULL_PATH), "byte", 0, psutil.disk_usage(DB_DIRECTORY).total)
 
     return entries
 
@@ -236,42 +191,8 @@ def _get_network_entries():
     entries["Received"] = create_category_entry(delta_received, "byte", 0, MAX_NETWORK_SPEED)
     return entries
 
-def non_thread_gathering():
-    start_time = 0
-    end_time = 0
-    delta = 0
 
-    while True:
-        with connect(DB_FILE) as conn:
-            cursor = conn.cursor()
-
-            start_time = time.time()
-            data = gather_data()
-            for category, category_data in data.items():
-                for label, value in category_data["entries"].items():
-                    # add_database_entry(cursor, category, label, value["value"])
-                    try:
-                        value = value["value"]
-                    except:
-                        pass
-                    add_database_entry(cursor, category, label, value)
-
-
-            clean_up_database(cursor)
-
-        end_time = time.time()
-        delta = end_time - start_time
-
-        # print(".", end="", flush=True)
-
-        actual_sleep_time = max(0, TIME_STEP - delta)
-        print(actual_sleep_time)
-
-        time.sleep(actual_sleep_time)
-
-threads = {}
 def multi_thread_gathering():
-    import threading
     functions = {
         "processors": {
             "function": _get_cpu_entries,
@@ -295,7 +216,7 @@ def multi_thread_gathering():
         },
         "network": {
             "function": _get_network_entries,
-            "sleep_time": 10.0
+            "sleep_time": NETWORK_TIME_STEP
         }
     }
 
@@ -306,11 +227,6 @@ def multi_thread_gathering():
         t = threading.Thread(target=thread_gathering, args=(func, thread_id, category, sleep_time))
         threads[thread_id] = t
 
-    threads["CleanUp"] = threading.Thread(target=thread_clean_up_database)
-
-    # TODO use list comprehension
-    # [t.start() for t in threads.values()]
-    # [t.join() for t in threads.values()]
     for t in threads.values():
         t.daemon = True
         t.start()
@@ -331,48 +247,42 @@ def thread_gathering(func, thread_id, category, sleep_time):
 
         # Write data
         for label, label_entry in entries.items():
-            value = label_entry
-            try: # HACK
-                value = value["value"]
-            except:
-                pass
+            value = label_entry["value"]
 
-            with connect(DB_FILE) as conn:
-                cursor = conn.cursor()
-                add_database_entry(cursor, category, label, value)
-                #print("writing", thread_id, category, label, value)
+            if REST_COMMUNICATION:
+                call_rest_api(category, label, value)
+            else:
+                write_to_db(category, label, value)
 
         # Finish frame
         end_time = time.time()
         delta = end_time - start_time
 
         actual_sleep_time = max(0, sleep_time - delta)
-        # print(thread_id.ljust(32), str(actual_sleep_time))
-        print(thread_id.ljust(32), str(delta))
+
+        if DEBUG:
+            print(thread_id.ljust(32), str(delta))
 
         time.sleep(actual_sleep_time)
 
-def thread_clean_up_database():
-    while True:
-        current_time = time.time()
-        with connect(DB_FILE) as conn:
-            cursor = conn.cursor()
-            sql = 'DELETE FROM data WHERE ROWID IN (SELECT ROWID FROM data WHERE time < ?)'
-            args = (current_time - MAX_AGE, )
-            cursor.execute(sql, args)
+def write_to_db(category, label, value):
+    with connect(DB_FULL_PATH) as conn:
+        cursor = conn.cursor()
+        add_database_entry(cursor, category, label, value)
 
-        delta_time = time.time() - current_time
-        print("[ Clean Up ]".ljust(32), str(delta_time))
-        time.sleep(60*5)
-
+def call_rest_api(category, label, value):
+    URL = f"http://localhost:{REST_PORT}/add_data_point?category={category}&label={label}&value={value}"
+    response = requests.get(URL)
+    # print(URL, "__response__", response)
 
 
 # Run main program
 if __name__ == "__main__":
-    with connect(DB_FILE) as conn:
-        cursor = conn.cursor()
-        cursor.execute('CREATE TABLE IF NOT EXISTS data (category STRING, label STRING, time REAL, value REAL)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS category_index ON data (category, label, time)')
+    if not REST_COMMUNICATION:
+        with connect(DB_FULL_PATH) as conn:
+            cursor = conn.cursor()
+            cursor.execute('CREATE TABLE IF NOT EXISTS data (category STRING, label STRING, time REAL, value REAL)')
+            cursor.execute('CREATE INDEX IF NOT EXISTS category_index ON data (category, label, time)')
     # Initialize
     #non_thread_gathering()
     try:
