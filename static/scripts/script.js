@@ -300,7 +300,7 @@ function getCursorTime() {
 }
 
 function _getValueAtCursor(categoryData, label) {
-    let allValues = _getValuesForVisibleTimeRange(categoryData, label); // ASDF cursor snapping should work for all labels not just [0]
+    let allValues = _getValuesForVisibleTimeRange(categoryData, label);
     let cursorTimestamp = getCursorTime();
 
     let i = 0;
@@ -755,8 +755,6 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         cursorTimeSnapped = snappedValue[0];
         cursorTimeSnappedValue = snappedValue[1];
 
-        // Should not 'break' if values would be written to DB in different time steps
-        // But would need to find closest match
         contenders[label] = (cursorTimeSnapped);
         if (elements[categoryName].showCircleHighlight) {
             ctx.beginPath();
