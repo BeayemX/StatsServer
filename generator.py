@@ -312,6 +312,7 @@ def multi_thread_gathering():
     # [t.start() for t in threads.values()]
     # [t.join() for t in threads.values()]
     for t in threads.values():
+        t.daemon = True
         t.start()
 
     for t in threads.values():
@@ -374,4 +375,7 @@ if __name__ == "__main__":
         cursor.execute('CREATE INDEX IF NOT EXISTS category_index ON data (category, label, time)')
     # Initialize
     #non_thread_gathering()
-    multi_thread_gathering()
+    try:
+        multi_thread_gathering()
+    except KeyboardInterrupt:
+        print("\nStopped via KeyboardInterrupt.")
