@@ -2,6 +2,7 @@ class CategoryWrapper {
     constructor(category, labels, categoryData) {
         // Caching, not sure if needed
         this.category = category;
+        this.initialCategoryData = categoryData; // This will not be updated!
 
         // Configuration
         this.autoScale = true;
@@ -10,7 +11,6 @@ class CategoryWrapper {
         // Members
         this.labels = {}
         this.wrapper = document.createElement("div");
-        this.colorCounter = 0;
 
         // Initialization
         let att = document.createAttribute("class");
@@ -89,12 +89,7 @@ class CategoryWrapper {
     _generateLabelEntry(label, category, categoryData) {
         const graphWrapper = this.wrapper;
         const rowElement = {};
-
-        const color = categoryData["settings"].includes("monochrome") ? getColor(0): getColor(this.colorCounter);
-        this.colorCounter += 1
-
         rowElement["active"] = true;
-        rowElement["color"] = color;
 
         // Only use different colors if there is a graph
         // if (!categoryData["settings"].includes("nograph"))
@@ -108,6 +103,8 @@ class CategoryWrapper {
 
         // Label
         let td = document.createElement("td");
+        td.innerText = label;
+
         att = document.createAttribute("class");
         att.value = "td collabel";
         td.setAttributeNode(att);
@@ -147,15 +144,35 @@ class CategoryWrapper {
         td.appendChild(canvas);
 
         rowElement["bar"] = canvas;
+        rowElement["htmlnode"] = tr;
 
         tr.appendChild(td);
 
-        att = document.createAttribute("style");
-        att.value = "color:" + color;
-        tr.setAttributeNode(att);
         graphWrapper.appendChild(tr);
 
         this.labels[label] = rowElement;
+
+        this._sortLabelEntries();
+    }
+
+    _setRowColor(htmlNode, color) {
+        const att = document.createAttribute("style");
+        att.value = "color:" + color;
+        htmlNode.setAttributeNode(att);
+    }
+
+    _sortLabelEntries() {
+
+        let colorCounter = 0;
+
+        let items = Object.keys(this.labels).map((key) =>  {
+            return [key, this.labels[key]];
+        });
+        // Sort the array based on the second element
+        items.sort((first, second) => {
+            return first[1]["label"].innerText.localeCompare(second[1]["label"].innerText);
+        });
+
 
         // if entry is added during runtime
         // make sure that canvas is the last displayed element
@@ -163,6 +180,17 @@ class CategoryWrapper {
             console.log("should move canvas to back")
             // move div containing the graph to last position
             this.wrapper.appendChild(this.div);
+        }
+
+        for (let item of items) {
+            const color = this.initialCategoryData["settings"].includes("monochrome") ? getColor(0): getColor(colorCounter);
+            item[1]["color"] = color;
+
+            const htmlNode = item[1]["htmlnode"]
+            this._setRowColor(htmlNode, color);
+            this.wrapper.appendChild(htmlNode);
+
+            colorCounter += 1;
         }
     }
 

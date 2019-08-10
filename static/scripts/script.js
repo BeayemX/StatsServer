@@ -333,7 +333,7 @@ function _updateBars(categoryData, categoryName) {
         const color = _getElementColor(categoryName, label);
 
         // Label
-        elements[categoryName].labels[label]["label"].innerText = label;
+        // elements[categoryName].labels[label]["label"].innerText = label; // is done when creating label entries
 
         // Value
         const value = _getValueAtCursor(categoryData, label)[1];
