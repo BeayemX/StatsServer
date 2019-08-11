@@ -308,7 +308,6 @@ function _getValueAtCursor(categoryData, label) {
     for (; i<allValues.length; ++i){
         if (allValues[i][0] >= cursorTimestamp) {
             if (i > 0) {
-
                 const lowerIDistance = Math.abs(allValues[i-1][0] - cursorTimestamp);
                 const higherIDistance = Math.abs(allValues[i][0] - cursorTimestamp);
 
@@ -323,7 +322,6 @@ function _getValueAtCursor(categoryData, label) {
 
     i = Math.min(i, allValues.length-1); // Clamp to last array-value if no break occurs
     let value = allValues[i];
-
     return value;
 }
 
@@ -336,7 +334,11 @@ function _updateBars(categoryData, categoryName) {
         // elements[categoryName].labels[label]["label"].innerText = label; // is done when creating label entries
 
         // Value
-        const value = _getValueAtCursor(categoryData, label)[1];
+        const cursorValue = _getValueAtCursor(categoryData, label);
+        if (!cursorValue) // FIXME if all values of 'label' are outside of canvas, cursorvalue will be 'undefined'
+            continue;
+
+        const value = cursorValue[1];
 
         if (categoryData["entries"][label]["unit"] == "byte") {
             elements[categoryName].labels[label]["value"].innerText = humanizeBytes(value);
@@ -439,10 +441,14 @@ function _getValuesForVisibleTimeRange(categoryData, entryName) {
         }
     }
 
-    // Use values before and after to avoid empty spaces on the sides of the graph
-    beginIndex = Math.max(0, beginIndex - 1);
-    endIndex = endIndex + 2; // no check necessary, slice stops when out of bounds
-    return _prepareData(values.slice(beginIndex, endIndex));
+    beginIndex = Math.max(0, beginIndex);
+    endIndex = endIndex; // no check necessary, slice stops when out of bounds
+    const slicedValues = values.slice(beginIndex, endIndex);
+    if (slicedValues.length == 0)
+    {
+        return [];
+    }
+    return _prepareData(slicedValues);
 }
 
 function _prepareData(values) {
@@ -527,7 +533,11 @@ function _updateCanvas(categoryName, categoryData, canvas) {
         let avgCounter = 0;
 
         // find min / max values
+        // FIXME will be called again later on in the same function, also in loop again. maybe cache in dict?
+        // TODO cache visible values, then this call would only be executed when panning, instead of in every interaction?
         let allValues = _getValuesForVisibleTimeRange(categoryData, label);
+        if (allValues.length == 0)
+            continue;
 
         for (let i = 0; i < allValues.length; ++i)
         {
@@ -628,6 +638,9 @@ function _updateCanvas(categoryName, categoryData, canvas) {
             continue;
 
         let allValues = _getValuesForVisibleTimeRange(categoryData, label);
+        if (allValues.length == 0)
+            continue;
+
         const color = _getElementColor(categoryName, label);
 
         // Draw graph
@@ -693,7 +706,6 @@ function _updateCanvas(categoryName, categoryData, canvas) {
     // Draw individual limits
 
     for (const label of labels) {
-        // let allValues = _getValuesForVisibleTimeRange(categoryData, label); // was probably used for calculating average?
         const color = _getElementColor(categoryName, label);
 
         if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min") || categoryData["settings"].includes("draw_individual_limit_max")) {
@@ -752,6 +764,9 @@ function _updateCanvas(categoryName, categoryData, canvas) {
     const contenders = {};
     for (const label of labels) {
         const snappedValue = _getValueAtCursor(categoryData, label);
+        if (!snappedValue)
+            continue;
+
         cursorTimeSnapped = snappedValue[0];
         cursorTimeSnappedValue = snappedValue[1];
 
