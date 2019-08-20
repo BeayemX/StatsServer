@@ -10,12 +10,12 @@ import configparser
 import psutil
 
 # Flask
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, abort
 from flask_socketio import SocketIO, send, emit
 
 # Stats Server
 #from generator import get_values_for_label, USE_DELTA_COMPRESSION
-
+from databaseutilities import project_exists, get_project_id_for_name
 
 # Database access
 from sqlite3 import connect
@@ -39,8 +39,8 @@ DEBUG = conf["Server"].getboolean("Debug")
 USE_DELTA_COMPRESSION = conf["General"].getboolean("UseDeltaCompression")
 
 DB_DIR = conf["Generator"]["DatabaseDirectory"]
-#DB_FILE = os.path.join(DB_DIR, conf["Generator"]["DatabaseName"])
-DB_FILE = conf["Generator"]["DatabaseName"]
+DB_FILE = os.path.join(DB_DIR, conf["Generator"]["DatabaseName"])
+#DB_FILE = conf["Generator"]["DatabaseName"]
 
 # Initialize server
 app = Flask(__name__)
@@ -49,11 +49,12 @@ app.config['DEBUG'] = DEBUG
 
 socketio = SocketIO(app, async_mode='eventlet')
 
-def gather_data():
+def gather_data(projectid):
     with connect(DB_FILE) as conn:
         cursor = conn.cursor()
-        sql = 'SELECT category, label FROM data'
-        cursor.execute(sql)
+        sql = 'SELECT category, label FROM data WHERE projectid=?'
+        args = (projectid, )
+        cursor.execute(sql, args)
         data = cursor.fetchall()
 
         category_labels_dict = {}
@@ -78,9 +79,9 @@ def gather_data():
     print("Something went wrong when trying to read database")
     return None
 
-def get_data_as_json(last_server_sync_timestamp):
+def get_data_as_json(projectid, last_server_sync_timestamp):
     print("> > get_data_as_json")
-    gathered_data = gather_data()
+    gathered_data = gather_data(projectid)
     data = {}
     categories = {}
 
@@ -96,7 +97,7 @@ def get_data_as_json(last_server_sync_timestamp):
             #entries[label] = category_data["entries"][label] # copy every member, e.g. unit, max, min, ...
             entries[label] = {}
             entries[label]["value"] = [time.time(), 0] # FIXME there is no current value
-            entries[label]["values"] = get_values_for_label(category_key, label, last_server_sync_timestamp)
+            entries[label]["values"] = get_values_for_label(projectid, category_key, label, last_server_sync_timestamp)
             entries[label]["unit"] = ""
             entries[label]["min"] = 0
             entries[label]["max"] = 100
@@ -124,11 +125,11 @@ def get_data_as_json(last_server_sync_timestamp):
     print("Transferring: ", round(size / 1024 / 1024 * 1000) / 1000, "MB")
     return return_json
 
-def get_values_for_label(category, label, last_server_sync_timestamp):
+def get_values_for_label(projectid, category, label, last_server_sync_timestamp):
     with connect(f"file:{DB_FILE}?mode=ro", uri=True) as conn:
         cursor = conn.cursor()
-        sql = 'SELECT time, value FROM data WHERE category=? AND label=? AND time > ?'
-        args = (category, label, last_server_sync_timestamp)
+        sql = 'SELECT time, value FROM data WHERE projectid=? AND category=? AND label=? AND time > ?'
+        args = (projectid, category, label, last_server_sync_timestamp)
         cursor.execute(sql, args)
         data = cursor.fetchall()
 
@@ -160,21 +161,28 @@ def get_values_for_label(category, label, last_server_sync_timestamp):
 
         return data
 
-@app.route('/')
-def index():
-    # return render_template("index.html", hostname = socket.gethostname(), data = get_data_as_json(0))
-    return render_template("index.html", hostname = socket.gethostname())
+@app.route('/<projectname>')
+def index(projectname=None):
+    projectid = get_project_id_for_name(projectname)
+    if project_exists(projectid):
+        return render_template("index.html", hostname=socket.gethostname(), projectid=projectid)
+
+    return abort(404)
+    # return abort(int(projectid))
 
 @socketio.on('request_data')
 def handle_my_custom_event(json_data):
+    projectid = json_data["projectid"]
     ts = json_data["last_server_sync_timestamp"]
+
     print("\n < < < Requesting data from client > > >", ts)
     try:
         ts = int(ts)
     except ValueError:
         ts = 0
 
-    emit("update_data", get_data_as_json(ts))
+    emit("update_data", get_data_as_json(projectid, ts))
 
 if __name__ == '__main__':
 	socketio.run(app, host='0.0.0.0', port=PORT)
+# c3341eb332d44e449a90742b29129f1e

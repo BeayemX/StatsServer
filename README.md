@@ -16,7 +16,7 @@ python3 generator.py # assuming Python 3.6
 
 ```
 
-The other file is the `server.py` which runs a flask server where clients can connect to using a browser. 
+The other file is the `server.py` which runs a flask server where clients can connect to using a browser.
 At the moment the client is designed to be accessed from a mobile phone. You can even use the website as a Progressive Web App.
 
 ```
@@ -61,9 +61,15 @@ You can add your own data by modifying the `gather_data()` function in `generato
 Just add your own data to the `data`-dictionary. By using `create_category` you will get an object with all the needed fields which you can then fill with data.
 The key will be used as the label for the category. Your data has to have a field `entries` where you store your current values.
 
-There is also a field `settings`. At the moment the only value that can be used is `nograph` to avoid showing graphs. By default this is used to avoid showing graphs for the remaining space of the disks. 
+There is also a field `settings`. At the moment the only value that can be used is `nograph` to avoid showing graphs. By default this is used to avoid showing graphs for the remaining space of the disks.
 
 For some examples more just check out the already existing functions called in `gather_data()` to provide data.
+
+# REST interface
+
+```
+http://127.0.0.1:7890/add_data_point?projectid=testuuid&category=foo&label=bar&value=42
+```
 
 # Future
 Make UI responsive to be able to be used from the desktop.

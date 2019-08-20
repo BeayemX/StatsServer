@@ -154,6 +154,7 @@ function _requestData() {
 
     socket.emit("request_data", {
         "last_server_sync_timestamp": last_server_sync_timestamp,
+        "projectid": projectid
         });
 
     log("Requesting data...");
@@ -340,7 +341,8 @@ function _updateBars(categoryData, categoryName) {
 
         const value = cursorValue[1];
 
-        if (categoryData["entries"][label]["unit"] == "byte") {
+        // if (categoryData["entries"][label]["unit"] == "byte") { // TODO check for unit in category_data
+        if (value > 100) {
             elements[categoryName].labels[label]["value"].innerText = humanizeBytes(value);
         } else {
             elements[categoryName].labels[label]["value"].innerText = (Math.round(value * 100) / 100) + categoryData["entries"][label]["unit"];
@@ -441,8 +443,8 @@ function _getValuesForVisibleTimeRange(categoryData, entryName) {
         }
     }
 
-    beginIndex = Math.max(0, beginIndex);
-    endIndex = endIndex; // no check necessary, slice stops when out of bounds
+    beginIndex = Math.max(0, beginIndex-1);
+    endIndex = endIndex + 2; // no check necessary, slice stops when out of bounds
     const slicedValues = values.slice(beginIndex, endIndex);
     if (slicedValues.length == 0)
     {
@@ -739,7 +741,8 @@ function _updateCanvas(categoryName, categoryData, canvas) {
 
         // Draw text
         let text = "";
-        if (unit == "byte") {
+        // if (unit == "byte") { // TODO use unit from category_data
+        if (value > 100) {
             text = humanizeBytes(value);
         } else {
             text = Math.round(value * 100) / 100 + unit;

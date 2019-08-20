@@ -29,9 +29,27 @@ class CategoryWrapper {
         att = document.createAttribute("class");
         att.value = "tr categoryTitle";
         leftIcons.setAttributeNode(att);
-        leftIcons.innerText = "◯";
-        leftIcons.onmousedown = (evt) => this.toggleCircleHighlight();
         categoryHeader.appendChild(leftIcons);
+
+        const circleHighlight = document.createElement('div');
+        att = document.createAttribute("class");
+        circleHighlight.setAttributeNode(att);
+        //att.value = "tr categoryTitle";
+        circleHighlight.innerText = "◯";
+        circleHighlight.onmousedown = (evt) => this.toggleCircleHighlight();
+        leftIcons.appendChild(circleHighlight);
+
+        /*
+        const circleHighlight2 = document.createElement('div');
+        att = document.createAttribute("class");
+        circleHighlight2.setAttributeNode(att);
+        //att.value = "tr categoryTitle";
+        circleHighlight2.innerText = "X";
+        circleHighlight2.onmousedown = (evt) => this.toggleCircleHighlight();
+        leftIcons.appendChild(circleHighlight2);
+        //*/
+
+
 
 
         const headerLabel = document.createElement("div");
@@ -46,9 +64,27 @@ class CategoryWrapper {
         att = document.createAttribute("class");
         att.value = "tr categoryTitle";
         rightIcons.setAttributeNode(att);
-        rightIcons.innerText = "↕";
-        rightIcons.onmousedown = (evt) => this.toggleAutoScale();
+        //rightIcons.innerText = "↕";
+        //rightIcons.onmousedown = (evt) => this.toggleAutoScale();
         categoryHeader.appendChild(rightIcons);
+
+
+        const autoscaleToggle = document.createElement("div");
+        att = document.createAttribute("class");
+        // att.value = "tr categoryTitle";
+        //rightIcons.setAttributeNode(att);
+        autoscaleToggle.innerText = "↕";
+        autoscaleToggle.onmousedown = (evt) => this.toggleAutoScale();
+        rightIcons.appendChild(autoscaleToggle);
+        /*
+        const autoscaleToggle2 = document.createElement("div");
+        att = document.createAttribute("class");
+        // att.value = "tr categoryTitle";
+        //rightIcons.setAttributeNode(att);
+        autoscaleToggle2.innerText = "↕";
+        autoscaleToggle2.onmousedown = (evt) => this.toggleAutoScale();
+        rightIcons.appendChild(autoscaleToggle2);
+        //*/
 
 
         this.wrapper.appendChild(categoryHeader);
