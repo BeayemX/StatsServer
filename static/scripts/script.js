@@ -95,7 +95,7 @@ function onLoad() {
 
     // Setting value and innerHTML for customOptionSelect not needed
     // Will trigger update automatically when values are loaded
-    let option = customOptionSelect
+    let option = customOptionSelect;
     timedropdown.appendChild(option);
 
     for (let time of _getTimeRanges()) {
@@ -290,7 +290,7 @@ function _updateGraphs() {
     // Actual drawing
     for (let categoryName in elements) {
 
-        let categoryData = cachedData["categories"][categoryName]
+        let categoryData = cachedData["categories"][categoryName];
         _updateBars(categoryData, categoryName);
         _updateCanvas(categoryName, categoryData, elements[categoryName].canvas);
     }
@@ -341,11 +341,10 @@ function _updateBars(categoryData, categoryName) {
 
         const value = cursorValue[1];
 
-        // if (categoryData["entries"][label]["unit"] == "byte") { // TODO check for unit in category_data
-        if (value > 100) {
+        if (elements[categoryName].unit == "byte") {
             elements[categoryName].labels[label]["value"].innerText = humanizeBytes(value);
         } else {
-            elements[categoryName].labels[label]["value"].innerText = (Math.round(value * 100) / 100) + categoryData["entries"][label]["unit"];
+            elements[categoryName].labels[label]["value"].innerText = (Math.round(value * 100) / 100) + elements[categoryName].unit; // asdf
         }
 
         // Bar
@@ -690,19 +689,18 @@ function _updateCanvas(categoryName, categoryData, canvas) {
     }
     // HACK end
 
-    categoryData["unit"] = "%";
     // Draw global limits
     if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_min") || categoryData["settings"].includes("draw_global_limit_max")) {
         if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_min"))
-            _drawLimit(minMaxValues["globalMin"], usedMin, usedMax, categoryData["unit"], "#ddd");
+            _drawLimit(minMaxValues["globalMin"], usedMin, usedMax, elements[categoryName].unit, "#ddd");
         if (categoryData["settings"].includes("draw_global_limits") || categoryData["settings"].includes("draw_global_limit_max"))
-            _drawLimit(minMaxValues["globalMax"], usedMin, usedMax, categoryData["unit"], "#ddd");
+            _drawLimit(minMaxValues["globalMax"], usedMin, usedMax, elements[categoryName].unit, "#ddd");
     }
     if (categoryData["settings"].includes("draw_outer_limits") || categoryData["settings"].includes("draw_outer_limit_min")) {
-        _drawLimit(usedMin, usedMin, usedMax, categoryData["unit"], "#ddd", false);
+        _drawLimit(usedMin, usedMin, usedMax, elements[categoryName].unit, "#ddd", false);
     }
     if (categoryData["settings"].includes("draw_outer_limits") || categoryData["settings"].includes("draw_outer_limit_max")) {
-        _drawLimit(usedMax, usedMin, usedMax, categoryData["unit"], "#ddd", false);
+        _drawLimit(usedMax, usedMin, usedMax, elements[categoryName].unit, "#ddd", false);
     }
 
     // Draw individual limits
@@ -716,9 +714,9 @@ function _updateCanvas(categoryName, categoryData, canvas) {
 
             // Draw limits
             if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_min"))
-                _drawLimit(minValue, categoryData["entries"][label]["min"], categoryData["entries"][label]["max"], categoryData["entries"][label]["unit"], color, !elements[categoryName].autoScale);
+                _drawLimit(minValue, categoryData["entries"][label]["min"], categoryData["entries"][label]["max"], elements[categoryName].unit, color, !elements[categoryName].autoScale);
             if (categoryData["settings"].includes("draw_individual_limits") || categoryData["settings"].includes("draw_individual_limit_max"))
-                _drawLimit(maxValue, categoryData["entries"][label]["min"], categoryData["entries"][label]["max"], categoryData["entries"][label]["unit"], color, !elements[categoryName].autoScale);
+                _drawLimit(maxValue, categoryData["entries"][label]["min"], categoryData["entries"][label]["max"], elements[categoryName].unit, color, !elements[categoryName].autoScale);
             // _drawLimit(avg, label, color, true, "Average: ");
         }
     }
@@ -741,11 +739,10 @@ function _updateCanvas(categoryName, categoryData, canvas) {
 
         // Draw text
         let text = "";
-        // if (unit == "byte") { // TODO use unit from category_data
-        if (value > 100) {
+        if (unit == "byte") {
             text = humanizeBytes(value);
         } else {
-            text = Math.round(value * 100) / 100 + unit;
+            text = (Math.round(value * 100) / 100) + unit; // asdf
         }
 
         let fontSize = 36;
@@ -1146,19 +1143,19 @@ function log(text) {
 }
 
 const conversionFactor = 1024.0;
-const units = ["B", "KB", "MB", "GB", "TB", "PB"];
+const byteUnits = ["B", "KB", "MB", "GB", "TB", "PB"];
 
 function humanizeBytes(bytes) {
     bytes = Math.round(bytes); // when calculating average bytes can be float
 
     let idx = 0;
-    while (bytes >= conversionFactor && idx < units.length - 1) {
+    while (bytes >= conversionFactor && idx < byteUnits.length - 1) {
         bytes = bytes / conversionFactor;
         idx += 1;
     }
 
     const decimals = bytes >= 100 ? 1 : 2;
-    return roundToDecimals(bytes, decimals) + " " + units[idx];
+    return roundToDecimals(bytes, decimals) + " " + byteUnits[idx];
 }
 
 // UTILITIES

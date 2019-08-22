@@ -243,6 +243,43 @@ img {
     outline: 0px;
 }
 
+.unitselectionLabel {
+    font-size: 36pt;
+    text-align: center;
+    flex-grow: 1;
+}
+
+.unitselection {
+    background-color: rgba(0, 0, 0, 0);
+    color: #ddd;
+    font-size: 48pt;
+    flex: 1;
+    text-align: right;
+    margin-left: 25%;
+    margin-right: -25%;
+    border: 0;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+.unitselection:focus {
+    border: 0px;
+    outline: 0px;
+}
+.unitselection option{
+    background-color: #333;
+}
+
+.categoryheadericon {
+    /*
+    border-bottom: 4px solid #0d0;
+    */
+    border-bottom: 2px solid #ddd;
+    flex: 1;
+    margin-left: 2%;
+    margin-right: 2%;
+    text-align: center;
+}
+
 #infoline {
     background-color: #444;
     color: #0d0;

@@ -1,4 +1,10 @@
+const scaleUnits = ["", " %", "byte", " °C"];
+
 class CategoryWrapper {
+    get_name_for_local_storage() {
+        return this.category + "_unit";
+    }
+
     constructor(category, labels, categoryData) {
         // Caching, not sure if needed
         this.category = category;
@@ -7,6 +13,10 @@ class CategoryWrapper {
         // Configuration
         this.autoScale = true;
         this.showCircleHighlight = true;
+
+        // this.unit = JSON.parse(localStorage.getItem(this.get_name_for_local_storage()));
+        this.initialUnitIndex = localStorage.getItem(this.get_name_for_local_storage()) || 0;
+        this.unit = scaleUnits[this.initialUnitIndex];
 
         // Members
         this.labels = {}
@@ -24,7 +34,6 @@ class CategoryWrapper {
         att.value = "tr categoryHeader";
         categoryHeader.setAttributeNode(att);
 
-
         const leftIcons = document.createElement("div");
         att = document.createAttribute("class");
         att.value = "tr categoryTitle";
@@ -33,8 +42,9 @@ class CategoryWrapper {
 
         const circleHighlight = document.createElement('div');
         att = document.createAttribute("class");
+        att.value = "categoryheadericon";
         circleHighlight.setAttributeNode(att);
-        //att.value = "tr categoryTitle";
+
         circleHighlight.innerText = "◯";
         circleHighlight.onmousedown = (evt) => this.toggleCircleHighlight();
         leftIcons.appendChild(circleHighlight);
@@ -42,8 +52,8 @@ class CategoryWrapper {
         /*
         const circleHighlight2 = document.createElement('div');
         att = document.createAttribute("class");
+        att.value = "categoryheadericon";
         circleHighlight2.setAttributeNode(att);
-        //att.value = "tr categoryTitle";
         circleHighlight2.innerText = "X";
         circleHighlight2.onmousedown = (evt) => this.toggleCircleHighlight();
         leftIcons.appendChild(circleHighlight2);
@@ -69,13 +79,40 @@ class CategoryWrapper {
         categoryHeader.appendChild(rightIcons);
 
 
+        //*
         const autoscaleToggle = document.createElement("div");
         att = document.createAttribute("class");
-        // att.value = "tr categoryTitle";
-        //rightIcons.setAttributeNode(att);
+        att.value = "categoryheadericon";
+        autoscaleToggle.setAttributeNode(att);
+
         autoscaleToggle.innerText = "↕";
         autoscaleToggle.onmousedown = (evt) => this.toggleAutoScale();
         rightIcons.appendChild(autoscaleToggle);
+        // */
+
+        const unitDropdown = document.createElement('select');
+        att = document.createAttribute("class");
+        att.value = "unitselection unitselectionLabel categoryheadericon";
+        unitDropdown.setAttributeNode(att);
+
+        // asdf
+        unitDropdown.onchange = () => {
+            this.unit = scaleUnits[unitDropdown.selectedIndex];
+            localStorage.setItem(this.get_name_for_local_storage(), unitDropdown.selectedIndex);
+            this.redraw();
+        };
+
+        let option;
+
+        for (let unit of scaleUnits) {
+            option = document.createElement('option');
+            option.value = unit;
+            option.innerHTML = unit;
+            unitDropdown.appendChild(option);
+        }
+        unitDropdown.selectedIndex = this.initialUnitIndex;
+        rightIcons.appendChild(unitDropdown);
+
         /*
         const autoscaleToggle2 = document.createElement("div");
         att = document.createAttribute("class");
@@ -268,5 +305,12 @@ class CategoryWrapper {
     toggleCircleHighlight() {
         this.showCircleHighlight = !this.showCircleHighlight;
         _updateCanvas(this.category, cachedData["categories"][this.category], this.canvas);
+    }
+
+    redraw() { // HACK
+        let categoryData = cachedData["categories"][this.category];
+        _updateBars(categoryData, this.category);
+        _updateCanvas(this.category, categoryData, elements[this.category].canvas);
+        console.log("Should redraw: ", this.unit)
     }
 }
