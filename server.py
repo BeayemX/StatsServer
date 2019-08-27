@@ -2,7 +2,6 @@
 import os
 import sys
 import time
-import socket
 import json
 import configparser
 
@@ -165,7 +164,7 @@ def get_values_for_label(projectid, category, label, last_server_sync_timestamp)
 def index(projectname=None):
     projectid = get_project_id_for_name(projectname)
     if project_exists(projectid):
-        return render_template("index.html", hostname=socket.gethostname(), projectid=projectid)
+        return render_template("index.html", hostname=projectname, projectid=projectid)
 
     return abort(404)
     # return abort(int(projectid))
@@ -185,4 +184,4 @@ def handle_my_custom_event(json_data):
 
 if __name__ == '__main__':
 	socketio.run(app, host='0.0.0.0', port=PORT)
-# c3341eb332d44e449a90742b29129f1e
+
