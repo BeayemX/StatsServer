@@ -36,11 +36,13 @@ DEBUG = conf["Server"].getboolean("Debug")
 
 REST_COMMUNICATION = conf["Generator"].getboolean("CommunicateOverRest")
 
+HOST="localhost"
 PROJECT_NAME = "StatsServer"
 
 # Network variables
 sent_byte = psutil.net_io_counters()[0]
 received_byte = psutil.net_io_counters()[1]
+
 
 # Load variables
 MAX_LOAD = psutil.cpu_count()
@@ -283,7 +285,7 @@ def get_projectid():
             projectid = f.read()
             print("Read project id: ", projectid)
     else:
-        URL = f"http://localhost:{REST_PORT}/register?name={PROJECT_NAME}"
+        URL = f"http://{HOST}:{REST_PORT}/register?name={PROJECT_NAME}"
         response = requests.get(URL)
         projectid = response.content.decode('UTF-8')
 
@@ -293,7 +295,7 @@ def get_projectid():
             f.write(projectid)
 
 def call_rest_api(projectid, category, label, value):
-    URL = f"http://localhost:{REST_PORT}/add_data_point?projectid={projectid}&category={category}&label={label}&value={value}"
+    URL = f"http://{HOST}:{REST_PORT}/add_data_point?projectid={projectid}&category={category}&label={label}&value={value}"
     response = requests.get(URL)
     # print(URL, "__response__", response)
 
