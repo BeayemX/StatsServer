@@ -89,8 +89,8 @@ def add_load_entries(data):
 def _get_load_entries():
     entries = {}
     loads = os.getloadavg()
-    entries["Load 1"] = create_category_entry(loads[0], "", 0, MAX_LOAD)
-    entries["Load 5"] = create_category_entry(loads[1], "", 0, MAX_LOAD)
+    entries["Load  1"] = create_category_entry(loads[0], "", 0, MAX_LOAD)
+    entries["Load  5"] = create_category_entry(loads[1], "", 0, MAX_LOAD)
     entries["Load 15"] = create_category_entry(loads[2], "", 0, MAX_LOAD)
     return entries
 
