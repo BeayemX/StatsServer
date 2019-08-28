@@ -1,23 +1,3 @@
-// Settings
-let availableColors = [
-    "#ddddddff", // white
-    "#19c7f2ff", // cyan
-    "#00e700ff", // green
-    "#f4ff1cff", // yellow
-    "#ffac1cff", // orange
-    "#f03f3fff", // red
-    "#e534d4ff", // magenta
-    "#4c67ffff", // blue
-    "rgba(0, 0, 0, 1)",
-    "rgba(255, 0, 0, 1)",
-    "rgba(0, 255, 0, 1)",
-    "rgba(0, 0, 255, 1)",
-    "rgba(255, 255, 0, 1)",
-    "rgba(255, 0, 255, 1)",
-    "rgba(0, 255, 255, 1)",
-    "rgba(255, 0, 255, 1)"
-];
-
 const DEFAULT_AUTO_RELOAD = true;
 const DEFAULT_TIME_RANGE = 60*60;
 const RELOAD_MINIMUM_TIME_MS = 1000;
@@ -1195,10 +1175,6 @@ function _humanizeTime(sec) {
     }
 
     return text;
-}
-
-function getColor(idx) {
-    return availableColors[idx % availableColors.length];
 }
 
 function _getElementColor(categoryName, label) {

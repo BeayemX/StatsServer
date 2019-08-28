@@ -245,8 +245,9 @@ class CategoryWrapper {
             return first[1]["label"].innerText.localeCompare(second[1]["label"].innerText);
         });
 
+        this.recalculateAvailableColors(items.length);
         for (let item of items) {
-            const color = this.initialCategoryData["settings"].includes("monochrome") ? getColor(0): getColor(colorCounter);
+            const color = this.initialCategoryData["settings"].includes("monochrome") ? this.getColor(0): this.getColor(colorCounter);
             item[1]["color"] = color;
 
             const htmlNode = item[1]["htmlnode"]
@@ -312,5 +313,59 @@ class CategoryWrapper {
         _updateBars(categoryData, this.category);
         _updateCanvas(this.category, categoryData, elements[this.category].canvas);
         console.log("Should redraw: ", this.unit)
+    }
+
+    recalculateAvailableColors(maxNum) {
+        maxNum = Math.max(maxNum, 6);
+        const useWhite = true;
+
+        this.availableColors = [];
+        if (useWhite) {
+            this.availableColors.push("#ddddddff");
+            maxNum -= 1;
+        }
+
+        const stepsize = 1.0 / maxNum;
+        const offset = stepsize * (maxNum/2);
+        const SATURATION = 0.75;
+
+        for (let i=0; i<maxNum; ++i) {
+            this.availableColors.push(this._HSLToRGB(offset - i * stepsize, SATURATION, 0.5));
+        }
+    }
+
+    _HSLToRGB(h,s,l) {
+        let r, g, b;
+
+        if(s == 0) {
+            r = g = b = l; // achromatic
+        } else {
+            let hue2rgb = function hue2rgb(p, q, t){
+                if(t < 0) t += 1;
+                if(t > 1) t -= 1;
+                if(t < 1/6) return p + (q - p) * 6 * t;
+                if(t < 1/2) return q;
+                if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                return p;
+            }
+
+            let q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            let p = 2 * l - q;
+
+            r = hue2rgb(p, q, h + 1/3);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1/3);
+        }
+
+        r = Math.round(r * 255);
+        g = Math.round(g * 255);
+        b = Math.round(b * 255);
+
+        return `rgba(${r}, ${g}, ${b}, 1)`;
+    }
+
+
+    getColor(idx) {
+        return this.availableColors[idx % this.availableColors.length];
     }
 }
