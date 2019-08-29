@@ -110,9 +110,10 @@ def _get_cpu_entries():
 
     cpus = psutil.cpu_percent(percpu = True)
     counter = 0
+    spacing = len(str(len(cpus))) + 1
     for cpu_load in cpus:
         entry = create_category_entry(cpu_load, " %", 0, 100)
-        entries[f"CPU{counter}"] = entry
+        entries[f"CPU{str(counter).rjust(spacing)}"] = entry
         counter +=1
 
     return entries
