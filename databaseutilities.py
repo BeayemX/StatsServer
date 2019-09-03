@@ -59,3 +59,25 @@ def get_project_id_for_name(projectname):
             return id
 
     return None
+
+def get_project_list_for_user(userid):
+    with connect(DB_FILE) as conn:
+        cursor = conn.cursor()
+        sql = 'SELECT id, name FROM projects'
+        args = ()
+        cursor.execute(sql, args)
+        data = cursor.fetchall()
+
+        data_dict = {}
+
+        for entry in data:
+            id = entry[0]
+            name = entry[1]
+            data_dict[id] = {
+                "name": name
+            }
+
+        return data_dict
+
+    print("No projects found")
+    return None

@@ -36,8 +36,9 @@ DEBUG = conf["Server"].getboolean("Debug")
 
 REST_COMMUNICATION = conf["Generator"].getboolean("CommunicateOverRest")
 
+HOST="192.168.1.66"
 HOST="localhost"
-PROJECT_NAME = "StatsServer"
+PROJECT_NAME = "WorkStation"
 
 # Network variables
 sent_byte = psutil.net_io_counters()[0]
@@ -160,10 +161,8 @@ def add_disk_entries(data):
 def _get_disk_entries():
     entries = {}
 
-    for name, path in [("Disk", "/"), ("Ram disk", DB_DIRECTORY)]:
+    for name, path in [("Disk", "/"), ]:
         entries[name] = create_category_entry(psutil.disk_usage(path).used, "byte", 0, psutil.disk_usage(path).total)
-
-    entries["DB file size"] = create_category_entry(os.path.getsize(DB_FULL_PATH), "byte", 0, psutil.disk_usage(DB_DIRECTORY).total)
 
     return entries
 
@@ -202,15 +201,15 @@ def multi_thread_gathering():
     functions = {
         "processors": {
             "function": _get_cpu_entries,
-            "sleep_time": 2.0
+            "sleep_time": 10.0
         },
         "load": {
             "function": _get_load_entries,
-            "sleep_time": 5.0
+            "sleep_time": 10.0
         },
         "temperature": {
             "function": _get_temperature_entries,
-            "sleep_time": 5.0
+            "sleep_time": 10.0
         },
         "memory": {
             "function": _get_memory_entries,

@@ -14,7 +14,7 @@ from flask_socketio import SocketIO, send, emit
 
 # Stats Server
 #from generator import get_values_for_label, USE_DELTA_COMPRESSION
-from databaseutilities import project_exists, get_project_id_for_name
+from databaseutilities import project_exists, get_project_id_for_name, get_project_list_for_user
 
 # Database access
 from sqlite3 import connect
@@ -160,8 +160,12 @@ def get_values_for_label(projectid, category, label, last_server_sync_timestamp)
 
         return data
 
+@app.route('/')
+def index():
+    return render_template("login.html")
+
 @app.route('/<projectname>')
-def index(projectname=None):
+def project(projectname=None):
     projectid = get_project_id_for_name(projectname)
     if project_exists(projectid):
         return render_template("index.html", hostname=projectname, projectid=projectid)
