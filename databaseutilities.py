@@ -1,6 +1,8 @@
 from sqlite3 import connect
 import configparser
 import os
+import uuid
+
 
 
 # FIXME duplicate code in server.py (config reader)
@@ -80,4 +82,58 @@ def get_project_list_for_user(userid):
         return data_dict
 
     print("No projects found")
+    return []
+
+def register_user(username, password):
+    if not does_user_exist(username):
+    
+        with connect(DB_FILE) as conn:
+            user_id = uuid.uuid4().hex
+            
+            cursor = conn.cursor()
+            sql = 'INSERT INTO users (id, username, password) values(?, ?, ?)'
+            args = (user_id, username, password)
+            cursor.execute(sql, args)
+            return user_id
+    
     return None
+
+def does_user_exist(username):
+    with connect(DB_FILE) as conn:
+        cursor = conn.cursor()
+        sql = 'SELECT username FROM users WHERE username=?'
+        args = (username, )
+        cursor.execute(sql, args)
+        data = cursor.fetchall()
+        return len(data) > 0
+
+def get_id_for_user_pw(username, password):
+    with connect(DB_FILE) as conn:
+        cursor = conn.cursor()
+        sql = 'SELECT id, username, password FROM users'
+        args = ()
+        cursor.execute(sql, args)
+        data = cursor.fetchall()
+
+    for entry in data:
+        db_id = entry[0]
+        db_user = entry[1]
+        db_password = entry[2]
+
+        if db_user == username and db_password == password:
+            return db_id
+
+    return None
+
+def initialize_database():
+    with connect(DB_FILE) as conn:
+        print(f"Database at: {DB_FILE}")
+
+        cursor = conn.cursor()
+
+        cursor.execute('CREATE TABLE IF NOT EXISTS data (projectid STRING, category STRING, label STRING, time REAL, value REAL)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS category_index ON data (projectid, category, label)')
+
+        # cursor.execute('DROP TABLE projects')
+        cursor.execute('CREATE TABLE IF NOT EXISTS projects (id STRING, name STRING)')
+        cursor.execute('CREATE TABLE IF NOT EXISTS users (id STRING, username STRING, password STRING)')
