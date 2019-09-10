@@ -8,7 +8,7 @@ import threading
 import uuid
 
 
-from databaseutilities import project_exists
+from databaseutilities import project_exists, initialize_database
 
 conf = configparser.ConfigParser()
 conf.read(os.path.join(os.path.dirname(__file__),"settings.conf"))
@@ -105,17 +105,7 @@ def thread_clean_up_database():
 
 
 if __name__ == "__main__":
-    with connect(DB_FULL_PATH) as conn:
-        print(f"Database at: {DB_FULL_PATH}")
-
-        cursor = conn.cursor()
-
-        cursor.execute('CREATE TABLE IF NOT EXISTS data (projectid STRING, category STRING, label STRING, time REAL, value REAL)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS category_index ON data (projectid, category, label)')
-
-        # cursor.execute('DROP TABLE projects')
-        cursor.execute('CREATE TABLE IF NOT EXISTS projects (id STRING, name STRING)')
-
+    initialize_database()
 
     # Start clean up thread
     clean_up_thread = threading.Thread(target=thread_clean_up_database)
