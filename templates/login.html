@@ -18,18 +18,22 @@
 		// Empty script area for testing stufff
 
 		function login() {
-			userid = document.getElementById("useridInput").value;
+			let userid = document.getElementById("username").value;
+			let password = document.getElementById("password").value;
 			alert("logging in with: " + userid);
 			
 			window.location.href = `/${userid}`;
-		}
+		}		
 	</script>
 
 </head>
 
 <body>
-	<input id="useridInput" />
-	<button onclick="login()">Login</button>
+	<form action="{{ url_for('handlelogin') }}" method="post">
+		<input type="text" name="username" value="testuser1"/>
+		<input type="text" name="password" value="passwd"/>
+		<input type="submit" value="Login" />
+	</form>
 </body>
 
 </html>

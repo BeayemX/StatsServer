@@ -14,7 +14,7 @@ from flask_socketio import SocketIO, send, emit
 
 # Stats Server
 #from generator import get_values_for_label, USE_DELTA_COMPRESSION
-from databaseutilities import project_exists, get_project_id_for_name, get_project_list_for_user
+from databaseutilities import project_exists, get_project_id_for_name, get_project_list_for_user, get_id_for_user_pw, register_user
 
 # Database access
 from sqlite3 import connect
@@ -160,15 +160,49 @@ def get_values_for_label(projectid, category, label, last_server_sync_timestamp)
 
         return data
 
-@app.route('/')
-def index():
+@app.route('/login')
+def login():
     return render_template("login.html")
 
-@app.route('/<projectname>')
+@app.route('/handlelogin', methods=['POST'])
+def handlelogin():
+    print("request")
+    print(request)
+    usr = request.form['username']
+    pw = request.form['password']
+    print("login")
+    print(usr, pw)
+
+    user_id = register_user(usr, pw)
+
+    # newly registered
+    if user_id:
+        print("user_id", user_id)
+    else:
+        user_id = get_id_for_user_pw(usr, pw)
+        print("Logging in")
+    return render_template("projectlist.html", userid=user_id)
+
+    return "Logged in"
+
+@app.route('/')
+def index():
+
+    print("-------------------asfdasfdasfl alösdasfd öklasdföklfasdjklösdf")
+    return render_template("index.html")
+
+@app.route('/projectlist/<userid>')
+def projectlist(userid=None):
+    print("---------------------", userid)
+    print(userid)
+    projectlist = get_project_list_for_user(userid)
+    return render_template("projectlist.html", projects=projectlist)
+
+@app.route('/project/<projectname>')
 def project(projectname=None):
     projectid = get_project_id_for_name(projectname)
     if project_exists(projectid):
-        return render_template("index.html", hostname=projectname, projectid=projectid)
+        return render_template("projectview.html", hostname=projectname, projectid=projectid)
 
     return abort(404)
     # return abort(int(projectid))

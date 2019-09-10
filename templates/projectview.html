@@ -1,0 +1,94 @@
+<html>
+
+<head>
+	<meta name='viewport' content='user-scalable=0' />
+	<link rel="shortcut icon" type="image/png" href="{{ url_for('static',filename='images/icon-192.png') }}"/>
+
+
+	<link rel="manifest" href="{{ url_for('static',filename='manifest/manifest.json') }}">
+	<link rel="stylesheet" href="{{ url_for('static',filename='style/style.css') }}">
+
+	<link href="https://fonts.googleapis.com/css?family=Oswald" rel="stylesheet">
+
+	<!--Websockets-->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<!-- TODO without the next line it is not possible to call functions on localhost -->
+	<script type=text/javascript>$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};</script>
+	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+
+	<!--My scripts-->
+	<script type="text/javascript" src="{{ url_for('static',filename='scripts/script.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static',filename='scripts/CategoryWrapper.js') }}"></script>
+	<script type="text/javascript" charset="utf-8">
+		// Empty script area for testing stufff
+		const projectid = '{{projectid}}';
+	</script>
+
+</head>
+
+<body onLoad="onLoad()">
+	<div id="wrapper">
+
+		<div id="title" class="outerArea">
+			<div id='titleleft' class='titleelement titleiconrow'>
+				<!--
+					<div class='titleicon' onclick="setTimeRange(-1); highlightClick(this)">+</div>
+					<div id="timerangedisplayLabel" class='titleicon' >0:00:00</div>
+					<div class='titleicon' onclick="setTimeRange(1); highlightClick(this)">-</div>
+
+				-->
+				<div class='titleicon'>
+					<select id="timedropdown" onchange="setTimeRange(this.selectedIndex);">
+				  	</select>
+				</div>
+				<!--
+					<div class='titleicon' onclick="changeTimeRange(1); highlightClick(this)"><img src="{{ url_for('static',filename='images/icon-192.png') }}"/></div>
+				-->
+
+			</div>
+			<div id='titlecenter' class='titleelement'>
+				<div class='titlelabel'>
+					{{hostname}}
+				</div>
+			</div>
+			<div id='titleright' class='titleelement titleiconrow'>
+				<!--
+					<div class='titleicon' onclick="reloadOnce(); highlightClick(this)">&#128472;</div> <!--https://www.fileformat.info/info/unicode/char/1f5d8/index.htm- ->
+				-->
+				<div class='titleicon' onclick="reloadOnce(); highlightClick(this)">
+					<div class='iconwrapper'>
+						<img src="{{ url_for('static',filename='images/ReloadIcon.png') }}"/>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div id="scrollable">
+			<div class="table" id="table">
+
+			</div>
+		</div>
+
+		<div id="footer" class="outerArea">
+			<div id="reloadrow" class="stateRow">
+				<div id="reloadstate" class="stateRowElement" onclick="toggleAutoReload();">ToggleAutoReload</div>
+				<div id="timedisplay" class="stateRowElement" onclick="timedisplayClicked()">Last Update:</div>
+			</div>
+
+		</div>
+		<div id="debugarea" class="outerArea">
+			<div id="debugrow" class="stateRow">
+				<div id="debugbutton" class="stateRowElement" onclick="onDebugPressed()">Debug</div>
+				<div class="stateRowElement" onclick="changePreparationResolution(-1)">-</div>
+				<div id="preparedatabutton" class="stateRowElement" onclick="toggleDataPreparation()">Prepare data</div>
+				<div class="stateRowElement" onclick="changePreparationResolution(1)">+</div>
+			</div>
+			<div class="stateRow">
+				<div id='infoline' class="stateRowElement"></div>
+			</div>
+		</div>
+
+		<div id="debugoverlay"></div>
+	</div>
+</body>
+
+</html>

@@ -20,13 +20,19 @@
 		function show_project(projects, projectid) {
 			const proj = projects[projectid];
 			const projectname = proj["name"];
-			window.location.href = `/${projectname}`;
+			window.location.href = `/project/${projectname}`;
+		}
+
+		function onLoad(userId){
+			console.log("started with id", userId)
+			localStorage.setItem("userid", userId)
 		}
 	</script>
 
 </head>
 
-<body>
+<body onload="onLoad('{{ userid }}')">
+	<p>Project list:</p>
 	{%for project in projects%}
 	<button onclick="show_project({{projects}}, '{{project}}')">{{projects[project]["name"]}}</button>
 	{%endfor%}
