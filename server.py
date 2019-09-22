@@ -19,6 +19,9 @@ from databaseutilities import project_exists, get_project_id_for_name, get_proje
 # Database access
 from sqlite3 import connect
 
+import hashlib
+
+
 # Process sys args
 import argparse
 parser = argparse.ArgumentParser(description="This will show all values that can be toggled. The initial value is gathered from the configuration file(s). The default values are used if there are no files provided.")
@@ -164,39 +167,13 @@ def get_values_for_label(projectid, category, label, last_server_sync_timestamp)
 def login():
     return render_template("login.html")
 
-@app.route('/handlelogin', methods=['POST'])
-def handlelogin():
-    print("request")
-    print(request)
-    usr = request.form['username']
-    pw = request.form['password']
-    print("login")
-    print(usr, pw)
-
-    user_id = register_user(usr, pw)
-
-    # newly registered
-    if user_id:
-        print("user_id", user_id)
-    else:
-        user_id = get_id_for_user_pw(usr, pw)
-        print("Logging in")
-    return render_template("projectlist.html", userid=user_id)
-
-    return "Logged in"
-
 @app.route('/')
 def index():
-
-    print("-------------------asfdasfdasfl alösdasfd öklasdföklfasdjklösdf")
     return render_template("index.html")
 
-@app.route('/projectlist/<userid>')
-def projectlist(userid=None):
-    print("---------------------", userid)
-    print(userid)
-    projectlist = get_project_list_for_user(userid)
-    return render_template("projectlist.html", projects=projectlist)
+@app.route('/projectlist')
+def projectlist():    
+    return render_template("projectlist.html")
 
 @app.route('/project/<projectname>')
 def project(projectname=None):
@@ -206,6 +183,70 @@ def project(projectname=None):
 
     return abort(404)
     # return abort(int(projectid))
+
+@app.route('/post', methods=['POST'])
+def post():
+    if request.method == 'POST':
+        data = request.json
+        data_dict = None
+        if isinstance(data, str): # already json-string, coming from python
+            data_dict = json.loads(data)
+            print(json.dumps(data_dict, indent=4, sort_keys=True))
+        elif isinstance(data, dict): # coming from JavaScript
+            print(json.dumps(data, indent=4, sort_keys=True))
+            data_dict = data
+        else:
+            print("Data is of type:", type(data))
+
+
+        if data_dict["type"] == "login":
+            usr = data_dict["username"]
+            pw = data_dict["password"]
+            hashed_pw = hash_pw(pw)
+
+            user_id = get_id_for_user_pw(usr, hashed_pw)
+
+            if user_id:
+                return json.dumps({
+                    "error": 0,
+                    "userId": user_id
+                })
+            else:
+                return json.dumps({
+                    "error": 1,
+                    "errorMessage": "Login failed"
+                })
+
+        elif data_dict["type"] == "register":
+            usr = data_dict["username"]
+            pw = data_dict["password"]
+
+            hashed_pw = hash_pw(pw)
+            user_id = register_user(usr, hashed_pw)
+
+            if user_id == None:
+                return json.dumps({
+                    "error": 1,
+                    "errorMessage": "User does already exist"
+                })
+            else:
+                return json.dumps({
+                    "error": 0,
+                    "userId": user_id
+                })
+
+
+        elif data_dict["type"] == "get_project_list":
+            return get_project_list_for_user(data_dict["userId"])
+
+        return json.dumps({
+            "type": "server_response",
+            "state": "done"
+        })
+    return "No POST method used"
+
+def hash_pw(pw):
+    return hashlib.sha512(str(pw).encode('utf-8')).hexdigest()
 
 @socketio.on('request_data')
 def handle_my_custom_event(json_data):

@@ -38,7 +38,7 @@ REST_COMMUNICATION = conf["Generator"].getboolean("CommunicateOverRest")
 
 HOST="192.168.1.66"
 HOST="localhost"
-PROJECT_NAME = "WorkStation"
+PROJECT_NAME = "lenovo"
 
 # Network variables
 sent_byte = psutil.net_io_counters()[0]

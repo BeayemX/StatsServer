@@ -134,6 +134,6 @@ def initialize_database():
         cursor.execute('CREATE TABLE IF NOT EXISTS data (projectid STRING, category STRING, label STRING, time REAL, value REAL)')
         cursor.execute('CREATE INDEX IF NOT EXISTS category_index ON data (projectid, category, label)')
 
-        # cursor.execute('DROP TABLE projects')
+        #cursor.execute('DROP TABLE users')
         cursor.execute('CREATE TABLE IF NOT EXISTS projects (id STRING, name STRING)')
         cursor.execute('CREATE TABLE IF NOT EXISTS users (id STRING, username STRING, password STRING)')

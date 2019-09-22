@@ -4,7 +4,6 @@
 	<meta name='viewport' content='user-scalable=0' />
 	<link rel="shortcut icon" type="image/png" href="{{ url_for('static',filename='images/icon-192.png') }}"/>
 
-
 	<link rel="manifest" href="{{ url_for('static',filename='manifest/manifest.json') }}">
 	<link rel="stylesheet" href="{{ url_for('static',filename='style/style.css') }}">
 
@@ -15,27 +14,53 @@
 
 	<!--My scripts-->
 	<script type="text/javascript" charset="utf-8">
-		// Empty script area for testing stufff
+		const userId = localStorage.getItem("userId");
 
-		function show_project(projects, projectid) {
-			const proj = projects[projectid];
-			const projectname = proj["name"];
-			window.location.href = `/project/${projectname}`;
+		function show_project(project) {
+			window.location.href = `/project/${project["name"]}`;
 		}
 
-		function onLoad(userId){
-			console.log("started with id", userId)
-			localStorage.setItem("userid", userId)
+		function onLoad() {
+			make_post_request("get_project_list", (projects) => {
+
+				const buttonContainer = document.getElementById("projectlist");
+
+				for ( let projectId in projects){
+					const project = projects[projectId];
+
+					const button = document.createElement("button");
+					button.onclick = () => { show_project(project) };
+					button.innerHTML = project["name"];
+					buttonContainer.appendChild(button);
+				}
+			});
+		}
+
+		function make_post_request(type, callback) {
+			var xhr = new XMLHttpRequest();
+			const isAsync = true;
+			xhr.open("POST", "/post", isAsync);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			const requestData = JSON.stringify({
+				type: type,
+				userId: userId
+			});
+			const response = xhr.send(requestData);
+
+			xhr.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+					const data = JSON.parse(xhr.responseText)
+					callback(data);
+				}
+			}
 		}
 	</script>
 
 </head>
 
-<body onload="onLoad('{{ userid }}')">
+<body onload="onLoad()">
 	<p>Project list:</p>
-	{%for project in projects%}
-	<button onclick="show_project({{projects}}, '{{project}}')">{{projects[project]["name"]}}</button>
-	{%endfor%}
+	<div id="projectlist"></div>
 </body>
 
 </html>

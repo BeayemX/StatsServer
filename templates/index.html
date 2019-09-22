@@ -9,15 +9,13 @@
 	<link rel="stylesheet" href="{{ url_for('static',filename='style/style.css') }}">
 
 	<script type="text/javascript" charset="utf-8">		
-		const userid = localStorage.getItem("userid");
+		const userId = localStorage.getItem("userId");
 
-		if (userid)
-		{
-			// TODO check if id exists
-			location.href = "/projectlist/" + userid;
+		if (userId) {
+			window.location.href = `/projectlist`;
+		} else {
+			window.location.href = `/login`;
 		}
-		else
-			location.href = "/login";
 	</script>
 
 </head>

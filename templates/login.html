@@ -18,22 +18,61 @@
 		// Empty script area for testing stufff
 
 		function login() {
-			let userid = document.getElementById("username").value;
-			let password = document.getElementById("password").value;
-			alert("logging in with: " + userid);
-			
-			window.location.href = `/${userid}`;
-		}		
+			makePostRequest("login", (data) => {
+				const error = data["error"];
+				if (error) {
+					alert(data["errorMessage"]);
+				} else {
+					const userId = data["userId"];
+					localStorage.setItem("userId", userId);
+					window.location.href = `/projectlist`;
+				}
+			});
+		}
+
+		function register() {
+			makePostRequest("register", (data) => {
+				const error = data["error"];
+				if (error) {
+					alert(data["errorMessage"]);
+				} else {
+					const userId = data["userId"];
+					localStorage.setItem("userId", userId);
+					window.location.href = `/projectlist`;
+				}
+			});
+		}
+
+		function makePostRequest(type, callback) {
+			var xhr = new XMLHttpRequest();
+			const isAsync = true;
+			xhr.open("POST", "/post", isAsync);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+
+			const requestData = JSON.stringify({
+				type: type,
+				username: document.getElementById("username").value,
+				password: document.getElementById("password").value
+			});
+
+			const response = xhr.send(requestData);
+
+			xhr.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {					
+					const data = JSON.parse(xhr.responseText);
+					callback(data);					
+				}
+			}
+		}
 	</script>
 
 </head>
 
 <body>
-	<form action="{{ url_for('handlelogin') }}" method="post">
-		<input type="text" name="username" value="testuser1"/>
-		<input type="text" name="password" value="passwd"/>
-		<input type="submit" value="Login" />
-	</form>
+	<input type="text" id="username" value="testuser1"/>
+	<input type="password" id="password" value="passwd"/>
+	<button onclick="login()">Login</button>
+	<button onclick="register()">Register</button>
 </body>
 
 </html>
