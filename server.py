@@ -237,7 +237,9 @@ def post():
 
 
         elif data_dict["type"] == "get_project_list":
-            return get_project_list_for_user(data_dict["userId"])
+            return json.dumps({
+                "projects": get_project_list_for_user(data_dict["userId"])
+            })
 
         return json.dumps({
             "type": "server_response",

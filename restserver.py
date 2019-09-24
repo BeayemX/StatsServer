@@ -21,22 +21,89 @@ DB_DIRECTORY = conf["Generator"]["DatabaseDirectory"]
 DB_FILE = conf["Generator"]["DatabaseName"]
 DB_FULL_PATH = os.path.join(DB_DIRECTORY, DB_FILE)
 
+USER_ID = "b57a7b9d0c4e4793a001a9a9e6525e41"
+
 # Flask
 from flask import Flask, render_template, jsonify, request
+import json
 
 app = Flask(__name__)
 app.config['DEBUG'] = DEBUG
 
-def _add_data_point(projectid, category, label, value):
+def _add_data_point(userid, projectid, category, label, value):
     timestamp = time.time()
     with connect(DB_FULL_PATH) as conn:
         cursor = conn.cursor()
         sql = 'INSERT INTO data (time, projectid, category, label, value) values(?, ?, ?, ?, ?)'
         args = (timestamp, projectid, category, label, value)
-
         cursor.execute(sql, args)
+
+        if not project_exists(projectid):
+            sql = 'INSERT INTO projects (userid, projectid) values(?, ?)'
+            args = (userid, projectid)
+            cursor.execute(sql, args)
         return True
     return False
+
+
+@app.route('/post', methods=['POST'])
+def post():
+    if request.method != 'POST':
+        print("Not a POST method")
+        return
+
+    # Extract POST data
+    data = request.json
+    data_dict = None
+    if isinstance(data, str): # already json-string, coming from python
+        data_dict = json.loads(data)
+        #print(json.dumps(data_dict, indent=4, sort_keys=True))
+    elif isinstance(data, dict): # coming from JavaScript
+        data_dict = data
+        #print(json.dumps(data_dict, indent=4, sort_keys=True))
+    else:
+        print("Data is of type:", type(data))
+
+    # Handle request
+    return_data = {
+        "error": 0,
+        "message": "Success"
+    }
+    
+    msgtype = data_dict["type"]
+    if msgtype == "create_project":
+        pass
+    elif msgtype == "create_category":
+        # TODO check if project exists
+        # error_message = "Project does not exist"
+        pass
+    elif msgtype == "create_entry":
+        # TODO check if category exists
+        # error_message = "Category does not exist"
+        pass
+    elif msgtype == "add_value":
+        # TODO check if entry exists
+        # error_message = "Entry does not exist"
+        completed_successfully = _add_data_point(
+            data_dict["userid"], 
+            data_dict["project"], 
+            data_dict["category"],
+            data_dict["label"],
+            data_dict["value"]
+        )
+        if not completed_successfully:
+            return_data["error"] = 1
+            return_data["message"] = "Could not add data point"
+    elif msgtype == "set_project_settings":
+        pass
+    elif msgtype == "set_category_settings":
+        pass
+    elif msgtype == "set_entry_settings":
+        pass
+    else:
+        print(f"Unsupported type '{msgtype}'")
+
+    return json.dumps(return_data) # TODO use flask.jsonify instead?
 
 
 @app.route('/register')

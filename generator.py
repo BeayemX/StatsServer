@@ -11,10 +11,11 @@ import psutil
 
 # Network
 import requests
+import json
 
 
 threads = {}
-projectid = ""
+projectid = "lenovo-mint" # will be overwritten by get_projectid()
 
 # Load settings from config file
 conf = configparser.ConfigParser()
@@ -34,11 +35,14 @@ USE_DELTA_COMPRESSION = conf["General"].getboolean("UseDeltaCompression")
 REST_PORT = conf["REST Server"].getint("Port")
 DEBUG = conf["Server"].getboolean("Debug")
 
+POST_COMMUNICATION = True
 REST_COMMUNICATION = conf["Generator"].getboolean("CommunicateOverRest")
 
 HOST="192.168.1.66"
 HOST="localhost"
-PROJECT_NAME = "lenovo"
+PROJECT_NAME = "lenovo-mint"
+
+USER_ID = "b57a7b9d0c4e4793a001a9a9e6525e41"
 
 # Network variables
 sent_byte = psutil.net_io_counters()[0]
@@ -59,6 +63,7 @@ def add_database_entry(cursor, category, label, value):
     args = (category, label, current_time, value)
     cursor.execute(sql, args)
 
+# TODO not used any more?
 def clean_up_database(cursor):
     current_time = time.time()
     sql = 'DELETE FROM data WHERE ROWID IN (SELECT ROWID FROM data WHERE time < ?)'
@@ -254,7 +259,15 @@ def thread_gathering(func, thread_id, category, sleep_time):
         for label, label_entry in entries.items():
             value = label_entry["value"]
 
-            if REST_COMMUNICATION:
+            if POST_COMMUNICATION:
+                data = {
+                    "project": projectid,
+                    "category": category,
+                    "label": label,
+                    "value": value
+                }
+                make_post_request(data)
+            elif REST_COMMUNICATION:
                 call_rest_api(projectid, category, label, value)
             else:
                 write_to_db(projectid, category, label, value)
@@ -299,6 +312,17 @@ def call_rest_api(projectid, category, label, value):
     response = requests.get(URL)
     # print(URL, "__response__", response)
 
+def make_post_request(data):
+    data["userid"] = USER_ID
+    data["type"] = "add_value"
+    
+    response = requests.post(f"http://{HOST}:{REST_PORT}/post", json=json.dumps(data))
+
+    # print(json.dumps(dir(response), indent=4, sort_keys=True))
+    response = json.loads(response.text)
+    if response["error"] != 0:
+        print(" *** Response *** ")
+        print(json.dumps(response, indent=4, sort_keys=True))
 
 # Run main program
 if __name__ == "__main__":
