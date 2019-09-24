@@ -868,7 +868,6 @@ function toggleAutoReload() {
 function reloadOnce() {
     if (!autoReload)
         _requestData();
-
 }
 
 function _updateReloadState() {

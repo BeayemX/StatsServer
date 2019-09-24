@@ -6,13 +6,14 @@
 
 	<link rel="manifest" href="{{ url_for('static',filename='manifest/manifest.json') }}">
 	<link rel="stylesheet" href="{{ url_for('static',filename='style/style.css') }}">
-
+	
 	<link href="https://fonts.googleapis.com/css?family=Oswald" rel="stylesheet">
-
+	
 	<!-- TODO without the next line it is not possible to call functions on localhost -->
 	<script type=text/javascript>$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};</script>
-
+	
 	<!--My scripts-->
+	<script type="text/javascript" src="{{ url_for('static',filename='scripts/utilities.js') }}"></script>
 	<script type="text/javascript" charset="utf-8">
 		const userId = localStorage.getItem("userId");
 
@@ -57,6 +58,11 @@
 <body onload="onLoad()">
 	<p>Project list:</p>
 	<div id="projectlist"></div>
+	<div class='titleicon' onclick="logout(); highlightClick(this)">
+		<div class='iconwrapper'>
+			<img src="{{ url_for('static',filename='images/Logout.png') }}"/>
+		</div>
+	</div>
 </body>
 
 </html>

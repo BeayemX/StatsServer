@@ -17,6 +17,7 @@
 	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
 
 	<!--My scripts-->
+	<script type="text/javascript" src="{{ url_for('static',filename='scripts/utilities.js') }}"></script>
 	<script type="text/javascript" src="{{ url_for('static',filename='scripts/script.js') }}"></script>
 	<script type="text/javascript" src="{{ url_for('static',filename='scripts/CategoryWrapper.js') }}"></script>
 	<script type="text/javascript" charset="utf-8">
@@ -58,6 +59,11 @@
 				<div class='titleicon' onclick="reloadOnce(); highlightClick(this)">
 					<div class='iconwrapper'>
 						<img src="{{ url_for('static',filename='images/ReloadIcon.png') }}"/>
+					</div>
+				</div>
+				<div class='titleicon' onclick="logout(); highlightClick(this)">
+					<div class='iconwrapper'>
+						<img src="{{ url_for('static',filename='images/Logout.png') }}"/>
 					</div>
 				</div>
 			</div>
