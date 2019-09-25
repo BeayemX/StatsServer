@@ -28,6 +28,12 @@
 					const button = document.createElement("button");					
 					button.onclick = () => { show_project(projectname) };
 					button.innerHTML = projectname;
+
+
+					let att = document.createAttribute("class");
+					att.value = "projectviewbutton";
+					button.setAttributeNode(att);
+
 					buttonContainer.appendChild(button);
 				}
 			});
@@ -56,11 +62,13 @@
 </head>
 
 <body onload="onLoad()">
-	<p>Project list:</p>
-	<div id="projectlist"></div>
-	<div class='titleicon' onclick="logout(); highlightClick(this)">
-		<div class='iconwrapper'>
-			<img src="{{ url_for('static',filename='images/Logout.png') }}"/>
+	<p class='projectlisttitle'>Project list</p>
+	<div class='projectlistwrapper'>
+		<div id="projectlist"></div>
+		<div class='titleicon' onclick="logout(); highlightClick(this)">
+			<div class='iconwrapper'>
+				<img src="{{ url_for('static',filename='images/Logout.png') }}"/>
+			</div>
 		</div>
 	</div>
 </body>

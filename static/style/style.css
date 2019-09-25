@@ -295,3 +295,24 @@ img {
 
 .iconwrapper img {
 }
+
+.projectlistwrapper {
+    background-color: #333;
+    height: 100%;
+}
+
+.projectlisttitle {
+    color: #ddd;
+    text-align: center;
+    font-size: 55pt;
+}
+
+#projectlist {
+    margin: 2%;
+}
+
+.projectviewbutton {
+    margin: 2%;
+    padding: 2%;
+    width: 96%;
+}
