@@ -5,16 +5,12 @@
       {
         "src": "/static/images/icon-192.png",
         "type": "image/png",
+        "purpose": "maskable",
         "sizes": "192x192"
-      },
-      {
-        "src": "/static/images/icon-512.png",
-        "type": "image/png",
-        "sizes": "512x512"
       }
     ],
     "start_url": "/",
-    "background_color": "#333",
     "display": "standalone",
+    "background_color": "#333",
     "theme_color": "#444"
   }
