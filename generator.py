@@ -15,7 +15,6 @@ import json
 
 
 threads = {}
-projectid = "lenovo" # will be overwritten by get_projectid()
 
 # Load settings from config file
 conf = configparser.ConfigParser()
@@ -40,6 +39,7 @@ REST_COMMUNICATION = conf["Generator"].getboolean("CommunicateOverRest") # TODO 
 POST_COMMUNICATION = True
 
 USER_ID = conf["General"]["UserID"]
+PROJECT_ID = conf["Generator"]["ProjectID"]
 
 # Network variables
 sent_byte = psutil.net_io_counters()[0]
@@ -258,16 +258,15 @@ def thread_gathering(func, thread_id, category, sleep_time):
 
             if POST_COMMUNICATION:
                 data = {
-                    "project": projectid,
                     "category": category,
                     "label": label,
                     "value": value
                 }
                 make_post_request(data)
             elif REST_COMMUNICATION:
-                call_rest_api(projectid, category, label, value)
+                call_rest_api(PROJECT_ID, category, label, value)
             else:
-                write_to_db(projectid, category, label, value)
+                write_to_db(PROJECT_ID, category, label, value)
 
         # Finish frame
         end_time = time.time()
@@ -285,32 +284,14 @@ def write_to_db(projectid, category, label, value):
         cursor = conn.cursor()
         add_database_entry(cursor, projectid, category, label, value)
 
-def get_projectid():
-    global projectid
-
-    file_name = "projectid"
-
-    if os.path.exists(file_name):
-        with open(file_name, 'r') as f:
-            projectid = f.read()
-            print("Read project id: ", projectid)
-    else:
-        URL = f"http://{HOST}:{REST_PORT}/register?name={PROJECT_NAME}"
-        response = requests.get(URL)
-        projectid = response.content.decode('UTF-8')
-
-        print("Registered", projectid)
-
-        with open(file_name, 'w') as f:
-            f.write(projectid)
-
 def call_rest_api(projectid, category, label, value):
-    URL = f"http://{HOST}:{REST_PORT}/add_data_point?projectid={projectid}&category={category}&label={label}&value={value}"
+    URL = f"http://{HOST}:{REST_PORT}/add_data_point?projectid={PROJECT_ID}&category={category}&label={label}&value={value}"
     response = requests.get(URL)
     # print(URL, "__response__", response)
 
 def make_post_request(data):
     data["userid"] = USER_ID
+    data["project"] = PROJECT_ID
     data["type"] = "add_value"
     
     response = requests.post(f"http://{HOST}:{REST_PORT}/post", json=json.dumps(data))
@@ -331,7 +312,6 @@ if __name__ == "__main__":
     # Initialize
     #non_thread_gathering()
     try:
-        get_projectid()
         multi_thread_gathering()
     except KeyboardInterrupt:
         print("\nStopped via KeyboardInterrupt.")
