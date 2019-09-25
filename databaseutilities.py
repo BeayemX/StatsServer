@@ -4,12 +4,11 @@ import os
 import uuid
 
 
-
 # FIXME duplicate code in server.py (config reader)
 import argparse
 
-parser = argparse.ArgumentParser(description="This will show all values that can be toggled. The initial value is gathered from the configuration file(s). The default values are used if there are no files provided.")
-parser.add_argument("-c", "--conf", help="toggle the tasks category")
+parser = argparse.ArgumentParser(description="A setting-config file can be specified.")
+parser.add_argument("-c", "--conf", help="path to the config file")
 args = parser.parse_args()
 
 conf_path = "settings.conf"

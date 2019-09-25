@@ -36,13 +36,13 @@ if args.conf and os.path.isfile(args.conf):
 # Load settings from config file
 conf = configparser.ConfigParser()
 conf.read(os.path.join(os.path.dirname(__file__), conf_path))
+
 PORT = conf["Server"].getint("Port")
 DEBUG = conf["Server"].getboolean("Debug")
 USE_DELTA_COMPRESSION = conf["General"].getboolean("UseDeltaCompression")
 
 DB_DIR = conf["Generator"]["DatabaseDirectory"]
 DB_FILE = os.path.join(DB_DIR, conf["Generator"]["DatabaseName"])
-#DB_FILE = conf["Generator"]["DatabaseName"]
 
 # Initialize server
 app = Flask(__name__)

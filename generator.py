@@ -15,7 +15,7 @@ import json
 
 
 threads = {}
-projectid = "lenovo-mint" # will be overwritten by get_projectid()
+projectid = "lenovo" # will be overwritten by get_projectid()
 
 # Load settings from config file
 conf = configparser.ConfigParser()
@@ -32,17 +32,14 @@ MAX_NETWORK_SPEED = conf["Generator"].getfloat("MaxNetworkSpeed") # in Byte
 MAX_NETWORK_SPEED *= NETWORK_TIME_STEP
 USE_DELTA_COMPRESSION = conf["General"].getboolean("UseDeltaCompression")
 
+HOST = conf["Generator"]["Host"]
 REST_PORT = conf["REST Server"].getint("Port")
 DEBUG = conf["Server"].getboolean("Debug")
 
+REST_COMMUNICATION = conf["Generator"].getboolean("CommunicateOverRest") # TODO remove in favour of POST communication
 POST_COMMUNICATION = True
-REST_COMMUNICATION = conf["Generator"].getboolean("CommunicateOverRest")
 
-HOST="192.168.1.66"
-HOST="localhost"
-PROJECT_NAME = "lenovo-mint"
-
-USER_ID = "b57a7b9d0c4e4793a001a9a9e6525e41"
+USER_ID = conf["General"]["UserID"]
 
 # Network variables
 sent_byte = psutil.net_io_counters()[0]

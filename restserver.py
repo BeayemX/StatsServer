@@ -7,7 +7,6 @@ from datetime import datetime
 import threading
 import uuid
 
-
 from databaseutilities import project_exists, initialize_database
 
 conf = configparser.ConfigParser()
@@ -20,8 +19,6 @@ MAX_AGE = conf["REST Server"].getint("MaxAge")
 DB_DIRECTORY = conf["Generator"]["DatabaseDirectory"]
 DB_FILE = conf["Generator"]["DatabaseName"]
 DB_FULL_PATH = os.path.join(DB_DIRECTORY, DB_FILE)
-
-USER_ID = "b57a7b9d0c4e4793a001a9a9e6525e41"
 
 # Flask
 from flask import Flask, render_template, jsonify, request
