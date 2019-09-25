@@ -14,6 +14,7 @@ args = parser.parse_args()
 conf_path = "settings.conf"
 if args.conf and os.path.isfile(args.conf):
     conf_path = args.conf
+    print("Using alternative config file", conf_path)
 
 # FIXME duplicate code in server.py (database connection)
 # Load settings from config file
@@ -36,11 +37,11 @@ def project_exists(projectid):
     project_ids = [x[1] for x in data]
 
     if DEBUG:
-        print("Available project IDs:")
+        print("Available projects:")
         for entry in data:
-            project_id = entry[0]
-            name = entry[1]
-            print(" ", project_id, name)
+            userid = entry[0]
+            projectname = entry[1]
+            print(" ", userid, projectname)
 
     return projectid in project_ids
 

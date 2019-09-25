@@ -17,8 +17,21 @@ import json
 threads = {}
 
 # Load settings from config file
+
+# FIXME duplicate code in server.py (config reader)
+import argparse
+
+parser = argparse.ArgumentParser(description="A setting-config file can be specified.")
+parser.add_argument("-c", "--conf", help="path to the config file")
+args = parser.parse_args()
+
+conf_path = "settings.conf"
+if args.conf and os.path.isfile(args.conf):
+    conf_path = args.conf
+    print("Using alternative config file", conf_path)
+
 conf = configparser.ConfigParser()
-conf.read(os.path.join(os.path.dirname(__file__),"settings.conf"))
+conf.read(os.path.join(os.path.dirname(__file__), conf_path))
 
 NETWORK_TIME_STEP = 10
 
