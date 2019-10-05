@@ -7,7 +7,7 @@ from datetime import datetime
 import threading
 import uuid
 
-from databaseutilities import project_exists, initialize_database
+from databaseutilities import project_exists, initialize_database, get_project_list_for_user
 
 conf = configparser.ConfigParser()
 conf.read(os.path.join(os.path.dirname(__file__),"settings.conf"))
@@ -82,8 +82,8 @@ def post():
         # TODO check if entry exists
         # error_message = "Entry does not exist"
         completed_successfully = _add_data_point(
-            data_dict["userid"], 
-            data_dict["project"], 
+            data_dict["userid"],
+            data_dict["project"],
             data_dict["category"],
             data_dict["label"],
             data_dict["value"]
@@ -154,12 +154,41 @@ def add_data_point():
 def thread_clean_up_database():
     while True:
         current_time = time.time()
+        
+        # Clean up old entries
         with connect(DB_FULL_PATH) as conn:
             cursor = conn.cursor()
             sql = 'DELETE FROM data WHERE ROWID IN (SELECT ROWID FROM data WHERE time < ?)'
             args = (current_time - MAX_AGE, )
             cursor.execute(sql, args)
 
+        # Clean up empty projects
+
+        with connect(DB_FILE) as conn:
+            cursor = conn.cursor()
+            sql = 'SELECT userid, projectid FROM projects'
+            args = ()
+            cursor.execute(sql, args)
+            data = cursor.fetchall()
+
+            for entry in data:
+                userid = entry[0]
+                projectid = entry[1]
+
+                sql = 'SELECT * FROM data WHERE projectid=?'
+                args = (projectid, )
+                cursor.execute(sql, args)
+                data = cursor.fetchall()
+
+                if len(data) == 0:
+                    if (DEBUG):
+                        print(projectid, "has been removed from the project list")
+                    
+                    sql = 'DELETE FROM projects WHERE projectid=?'
+                    args = (projectid, )
+                    cursor.execute(sql, args)
+
+        # Finalize
         delta_time = time.time() - current_time
 
         if (DEBUG):
