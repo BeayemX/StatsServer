@@ -5,9 +5,6 @@ import time
 import json
 import configparser
 
-# PIP
-import psutil
-
 # Flask
 from flask import Flask, render_template, jsonify, request, abort
 from flask_socketio import SocketIO, send, emit
