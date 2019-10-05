@@ -3,14 +3,14 @@
     "name": "Stats Server",
     "icons": [
       {
-        "src": "/static/images/icon-192.png",
+        "src": "/static/images/icon-512.png",
         "type": "image/png",
-        "purpose": "maskable",
-        "sizes": "192x192"
+        "purpose": "maskable any",
+        "sizes": "512x512"
       }
     ],
     "start_url": "/",
     "display": "standalone",
     "background_color": "#333",
-    "theme_color": "#444"
+    "theme_color": "#333"
   }

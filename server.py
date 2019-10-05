@@ -184,6 +184,12 @@ def project(projectname=None):
     return abort(404)
     # return abort(int(projectid))
 
+#"""
+@app.route('/serviceworker.js')
+def serviceworker():
+    return app.send_static_file('serviceworker.js')
+# """
+
 @app.route('/post', methods=['POST'])
 def post():
     if request.method == 'POST':

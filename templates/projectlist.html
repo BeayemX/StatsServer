@@ -4,7 +4,7 @@
 	<meta name='viewport' content='user-scalable=0' />
 	<link rel="shortcut icon" type="image/png" href="{{ url_for('static',filename='images/icon-192.png') }}"/>
 
-	<link rel="manifest" href="{{ url_for('static',filename='manifest/manifest.json') }}">
+	<link rel="manifest" href="{{ url_for('static',filename='manifest.json') }}">
 	<link rel="stylesheet" href="{{ url_for('static',filename='style/style.css') }}">
 	
 	<link href="https://fonts.googleapis.com/css?family=Oswald" rel="stylesheet">
@@ -16,6 +16,30 @@
 	<script type="text/javascript" src="{{ url_for('static',filename='scripts/utilities.js') }}"></script>
 	<script type="text/javascript" charset="utf-8">
 		const userId = localStorage.getItem("userId");
+
+		/**
+		* register a service worker
+		*/
+		if ("serviceWorker" in navigator) {
+			window.addEventListener("load", function() {
+				navigator.serviceWorker.register("/serviceworker.js",
+				{
+	 				scope: '/'
+				}).then(
+					function(registration) {
+						// Registration was successful
+						console.log(
+						"ServiceWorker registration successful with scope: ",
+						registration.scope
+						);
+					},
+					function(err) {
+						// registration failed :(
+						console.log("ServiceWorker registration failed: ", err);
+					}
+				);
+			});
+		}
 
 		function show_project(projectname) {
 			window.location.href = `/project/${projectname}`;
