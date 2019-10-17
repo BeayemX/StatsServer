@@ -308,12 +308,24 @@ def make_post_request(data):
     data["type"] = "add_value"
     
     response = requests.post(f"http://{HOST}:{REST_PORT}/post", json=json.dumps(data))
+    try:
+        # print(json.dumps(dir(response), indent=4, sort_keys=True))
+        response = json.loads(response.text)
+        if response["error"] != 0:
+            print(" *** Response *** ")
+            print(json.dumps(response, indent=4, sort_keys=True))
+    except json.decoder.JSONDecodeError as e:
+        if DEBUG:
+            print(str(e))
+            print(data["category"], data["label"], data["entry"])
 
-    # print(json.dumps(dir(response), indent=4, sort_keys=True))
-    response = json.loads(response.text)
-    if response["error"] != 0:
-        print(" *** Response *** ")
-        print(json.dumps(response, indent=4, sort_keys=True))
+            now = datetime.datetime.now()
+            errorfilename = f"JSON_DECODE_ERROR_{now.strftime('%Y-%m-%d %H:%M:%S')}"
+            with open(errorfilename, "a+") as f:
+                f.write(str(e) + "\n")
+                f.write(data["category"] + ", ")
+                f.write(data["label"] + ", "
+                f.write(data["value"] + "\n")
 
 # Run main program
 if __name__ == "__main__":
