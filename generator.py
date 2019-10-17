@@ -324,7 +324,7 @@ def make_post_request(data):
             with open(errorfilename, "a+") as f:
                 f.write(str(e) + "\n")
                 f.write(data["category"] + ", ")
-                f.write(data["label"] + ", "
+                f.write(data["label"] + ", ")
                 f.write(data["value"] + "\n")
 
 # Run main program
