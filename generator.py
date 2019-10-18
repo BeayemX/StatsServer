@@ -317,15 +317,17 @@ def make_post_request(data):
     except json.decoder.JSONDecodeError as e:
         if DEBUG:
             print(str(e))
-            print(data["category"], data["label"], data["entry"])
+            print(data["category"], data["label"], data["value"])
 
             now = datetime.datetime.now()
             errorfilename = f"JSON_DECODE_ERROR_{now.strftime('%Y-%m-%d %H:%M:%S')}"
             with open(errorfilename, "a+") as f:
                 f.write(str(e) + "\n")
+                f.write(response.text + "\n")
                 f.write(data["category"] + ", ")
                 f.write(data["label"] + ", ")
-                f.write(data["value"] + "\n")
+                f.write(str(data["value"]) + "\n")
+                f.write("\n")
 
 # Run main program
 if __name__ == "__main__":
