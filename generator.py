@@ -320,7 +320,7 @@ def make_post_request(data):
             print(data["category"], data["label"], data["value"])
 
             now = datetime.datetime.now()
-            errorfilename = f"JSON_DECODE_ERROR_{now.strftime('%Y-%m-%d %H:%M:%S')}"
+            errorfilename = f"JSON_DECODE_ERROR_{now.strftime('%Y-%m-%d_%H:%M:%S')}"
             with open(errorfilename, "a+") as f:
                 f.write(str(e) + "\n")
                 f.write(response.text + "\n")
