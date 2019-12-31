@@ -317,7 +317,7 @@ def make_post_request(data):
             if response["error"] != 0:
                 print(" *** Response *** ")
                 print(json.dumps(response, indent=4, sort_keys=True))
-        except json.decoder.JSONDecodeError as e:
+        except json.decoder.JSONDecodeError as e: # TODO this should not happen, only occured because code was not checking if server response was '200'
             if DEBUG:
                 print(str(e))
                 print(data["category"], data["label"], data["value"])
