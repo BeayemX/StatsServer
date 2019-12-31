@@ -1,6 +1,7 @@
 # Standard library
 import os
 import threading
+import traceback
 import time
 import math, random, datetime # Needed for test values
 from sqlite3 import connect
@@ -330,6 +331,20 @@ def make_post_request(data):
                     f.write(data["label"] + ", ")
                     f.write(str(data["value"]) + "\n")
                     f.write("\n")
+    else:
+        if DEBUG:
+            print("response.status_code")
+            print(response.status_code)
+
+        now = datetime.datetime.now()
+        errorfilename = f"RESPONSE_CODE_{response.status_code}_{now.strftime('%Y-%m-%d_%H:%M:%S')}"
+        with open(errorfilename, "a+") as f:
+            f.write("\n[STACKTRACE]\n")
+            f.write(''.join(traceback.format_stack()))
+
+            f.write("\n[EXCEPTION]\n")
+            f.write(traceback.format_exc())
+
 
 # Run main program
 if __name__ == "__main__":
