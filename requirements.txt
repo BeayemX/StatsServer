@@ -1,3 +1,4 @@
-Flask-SocketIO==3.1.2
-eventlet==0.24.1
-psutil==5.6.0
+Flask-SocketIO
+eventlet
+psutil
+websockets
