@@ -7,8 +7,6 @@ import time
 import math, random, datetime # Needed for test values
 import configparser
 
-import websocketclient
-
 # PIP
 import psutil
 
