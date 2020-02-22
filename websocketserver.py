@@ -4,6 +4,7 @@ import time
 import json
 import websockets
 import configparser
+import threading
 from sqlite3 import connect
 
 from databaseutilities import initialize_database, project_exists, get_project_list_for_user
@@ -57,10 +58,60 @@ def _add_data_point(userid, projectid, category, label, value):
         return True
     return False
 
+def thread_clean_up_database():
+    while True:
+        current_time = time.time()
+
+        # Clean up old entries
+        with connect(DB_FULL_PATH) as conn:
+            cursor = conn.cursor()
+            sql = 'DELETE FROM data WHERE ROWID IN (SELECT ROWID FROM data WHERE time < ?)'
+            args = (current_time - MAX_AGE, )
+            cursor.execute(sql, args)
+
+        # Clean up empty projects
+
+        with connect(DB_FILE) as conn:
+            cursor = conn.cursor()
+            sql = 'SELECT userid, projectid FROM projects'
+            args = ()
+            cursor.execute(sql, args)
+            data = cursor.fetchall()
+
+            for entry in data:
+                userid = entry[0]
+                projectid = entry[1]
+
+                sql = 'SELECT * FROM data WHERE projectid=?'
+                args = (projectid, )
+                cursor.execute(sql, args)
+                data = cursor.fetchall()
+
+                if len(data) == 0:
+                    if (DEBUG):
+                        print(projectid, "has been removed from the project list")
+
+                    sql = 'DELETE FROM projects WHERE projectid=?'
+                    args = (projectid, )
+                    cursor.execute(sql, args)
+
+        # Finalize
+        delta_time = time.time() - current_time
+
+        if (DEBUG):
+            print("[ Clean Up ]".ljust(16), str(delta_time))
+
+        time.sleep(CLEAN_UP_INTERVAL)
+
 # # # # # # # # # # # # # # # # # # # # # # # # #
-print("Database setting up")
+print("Setting up database")
 initialize_database()
-print("Database setup")
+
+print("Starting clean-up thread")
+clean_up_thread = threading.Thread(target=thread_clean_up_database)
+clean_up_thread.daemon = True
+clean_up_thread.start()
+print("Database set up")
 
 print("Starting server on port " + str(PORT))
 asyncio.get_event_loop().run_until_complete(websockets.serve(handle_messages, ADDRESS, PORT))
