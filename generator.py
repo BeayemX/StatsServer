@@ -1,11 +1,13 @@
 # Standard library
+import sys
 import os
 import threading
 import traceback
 import time
 import math, random, datetime # Needed for test values
-from sqlite3 import connect
 import configparser
+
+import websocketclient
 
 # PIP
 import psutil
@@ -13,6 +15,10 @@ import psutil
 # Network
 import requests
 import json
+
+# Websockets
+import asyncio
+import websockets
 
 
 threads = {}
@@ -36,50 +42,28 @@ conf.read(os.path.join(os.path.dirname(__file__), conf_path))
 
 NETWORK_TIME_STEP = 10
 
-DB_DIRECTORY = conf["Generator"]["DatabaseDirectory"]
-DB_FILE = conf["Generator"]["DatabaseName"]
-DB_FULL_PATH = os.path.join(DB_DIRECTORY, DB_FILE)
-
-MAX_AGE = conf["Generator"].getfloat("MaxAge") # in seconds
 MAX_NETWORK_SPEED = conf["Generator"].getfloat("MaxNetworkSpeed") # in Byte
 MAX_NETWORK_SPEED *= NETWORK_TIME_STEP
-USE_DELTA_COMPRESSION = conf["General"].getboolean("UseDeltaCompression")
 
 HOST = conf["Generator"]["Host"]
-REST_PORT = conf["REST Server"].getint("Port")
+PORT = conf["REST Server"].getint("Port")
 DEBUG = conf["Server"].getboolean("Debug")
-
-REST_COMMUNICATION = conf["Generator"].getboolean("CommunicateOverRest") # TODO remove in favour of POST communication
-POST_COMMUNICATION = True
 
 USER_ID = conf["General"]["UserID"]
 PROJECT_ID = conf["Generator"]["ProjectID"]
+
+
+uri = f"ws://{HOST}:{PORT}"
+
+RECONNECT_TIME = 5
+pending_requests = []
 
 # Network variables
 sent_byte = psutil.net_io_counters()[0]
 received_byte = psutil.net_io_counters()[1]
 
-
 # Load variables
 MAX_LOAD = psutil.cpu_count()
-
-# Create database directory if it does not exist
-if not os.path.exists(DB_DIRECTORY):
-    os.makedirs(DB_DIRECTORY)
-
-
-def add_database_entry(cursor, category, label, value):
-    current_time = time.time()
-    sql = 'INSERT INTO data (category, label, time, value) values(?, ?, ?, ?)'
-    args = (category, label, current_time, value)
-    cursor.execute(sql, args)
-
-# TODO not used any more?
-def clean_up_database(cursor):
-    current_time = time.time()
-    sql = 'DELETE FROM data WHERE ROWID IN (SELECT ROWID FROM data WHERE time < ?)'
-    args = (current_time - MAX_AGE, )
-    cursor.execute(sql, args)
 
 def create_category(*settings):
     return {
@@ -252,8 +236,8 @@ def multi_thread_gathering():
         t.daemon = True
         t.start()
 
-    for t in threads.values():
-        t.join()
+    #for t in threads.values():
+        #t.join()
 
 def thread_gathering(func, thread_id, category, sleep_time):
     start_time = 0
@@ -270,17 +254,13 @@ def thread_gathering(func, thread_id, category, sleep_time):
         for label, label_entry in entries.items():
             value = label_entry["value"]
 
-            if POST_COMMUNICATION:
-                data = {
-                    "category": category,
-                    "label": label,
-                    "value": value
-                }
-                make_post_request(data)
-            elif REST_COMMUNICATION:
-                call_rest_api(PROJECT_ID, category, label, value)
-            else:
-                write_to_db(PROJECT_ID, category, label, value)
+            data = {
+                "category": category,
+                "label": label,
+                "value": value
+            }
+
+            upload_data(data)
 
         # Finish frame
         end_time = time.time()
@@ -293,69 +273,43 @@ def thread_gathering(func, thread_id, category, sleep_time):
 
         time.sleep(actual_sleep_time)
 
-def write_to_db(projectid, category, label, value):
-    with connect(DB_FULL_PATH) as conn:
-        cursor = conn.cursor()
-        add_database_entry(cursor, projectid, category, label, value)
-
-def call_rest_api(projectid, category, label, value):
-    URL = f"http://{HOST}:{REST_PORT}/add_data_point?projectid={PROJECT_ID}&category={category}&label={label}&value={value}"
-    response = requests.get(URL)
-    # print(URL, "__response__", response)
-
-def make_post_request(data):
+def upload_data(data):
     data["userid"] = USER_ID
     data["project"] = PROJECT_ID
-    data["type"] = "add_value"
+    # data["type"] = "add_value"
 
-    response = requests.post(f"http://{HOST}:{REST_PORT}/post", json=json.dumps(data))
+    pending_requests.append(data)
 
-    if response.status_code == 200:
-        try:
-            # print(json.dumps(dir(response), indent=4, sort_keys=True))
-            response = json.loads(response.text)
-            if response["error"] != 0:
-                print(" *** Response *** ")
-                print(json.dumps(response, indent=4, sort_keys=True))
-        except json.decoder.JSONDecodeError as e: # TODO this should not happen, only occured because code was not checking if server response was '200'
-            if DEBUG:
-                print(str(e))
-                print(data["category"], data["label"], data["value"])
+async def main():
+    global pending_requests
+    async with websockets.connect(uri) as websocket:
+        async def send(data):
+            await websocket.send(json.dumps(data))
+        print("Connection established")
+        while True:
+            working_queue = pending_requests
+            pending_requests = []
 
-                now = datetime.datetime.now()
-                errorfilename = f"JSON_DECODE_ERROR_{now.strftime('%Y-%m-%d_%H:%M:%S')}"
-                with open(errorfilename, "a+") as f:
-                    f.write(str(e) + "\n")
-                    f.write(response.text + "\n")
-                    f.write(data["category"] + ", ")
-                    f.write(data["label"] + ", ")
-                    f.write(str(data["value"]) + "\n")
-                    f.write("\n")
-    else:
-        if DEBUG:
-            print("response.status_code")
-            print(response.status_code)
-
-        now = datetime.datetime.now()
-        errorfilename = f"RESPONSE_CODE_{response.status_code}_{now.strftime('%Y-%m-%d_%H:%M:%S')}"
-        with open(errorfilename, "a+") as f:
-            f.write("\n[STACKTRACE]\n")
-            f.write(''.join(traceback.format_stack()))
-
-            f.write("\n[EXCEPTION]\n")
-            f.write(traceback.format_exc())
+            for data in working_queue:
+                await send(data)
+            await asyncio.sleep(1)
 
 
-# Run main program
-if __name__ == "__main__":
-    if not REST_COMMUNICATION:
-        with connect(DB_FULL_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute('CREATE TABLE IF NOT EXISTS data (projectid STRING, category STRING, label STRING, time REAL, value REAL)')
-            cursor.execute('CREATE INDEX IF NOT EXISTS category_index ON data (projectid, category, label, time)')
-    # Initialize
-    #non_thread_gathering()
+try:
+    multi_thread_gathering()
+except KeyboardInterrupt:
+    print("\nStopped via KeyboardInterrupt.")
+
+while True:
     try:
-        multi_thread_gathering()
+        asyncio.get_event_loop().run_until_complete(main())
+    except ConnectionRefusedError:
+        now = datetime.datetime.now()
+        print(f"Connection refused: {now.strftime('%Y-%m-%d_%H:%M:%S')}")
+        time.sleep(RECONNECT_TIME)
     except KeyboardInterrupt:
-        print("\nStopped via KeyboardInterrupt.")
+        print("Exiting")
+        sys.exit(0)
+    except Exception as e:
+        print(e)
+
