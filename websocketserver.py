@@ -31,7 +31,8 @@ async def handle_messages(websocket, path): # This is executed once per websocke
     try:
         async for message in websocket:
             data = json.loads(message)
-            print(json.dumps(data))
+            if DEBUG:
+                print(json.dumps(data))
             _add_data_point(data["userid"],data["project"],data["category"],data["label"],data["value"])
     except asyncio.streams.IncompleteReadError:
         print("IncompleteReadError")
