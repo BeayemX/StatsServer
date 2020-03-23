@@ -5,7 +5,6 @@ import threading
 import traceback
 import time
 import math, random, datetime # Needed for test values
-import configparser
 
 # PIP
 import psutil
@@ -18,37 +17,31 @@ import json
 import asyncio
 import websockets
 
+# StatsServer
+import config_loader
 
 threads = {}
 
 # Load settings from config file
 
-# FIXME duplicate code in server.py (config reader)
-import argparse
+conf = config_loader.load()
 
-parser = argparse.ArgumentParser(description="A setting-config file can be specified.")
-parser.add_argument("-c", "--conf", help="path to the config file")
-args = parser.parse_args()
+general_conf = conf['general']
+generator_conf = conf['generator']
+ws_conf = conf['server']['websocket']
 
-conf_path = "settings.conf"
-if args.conf and os.path.isfile(args.conf):
-    conf_path = args.conf
-    print("Using alternative config file", conf_path)
-
-conf = configparser.ConfigParser()
-conf.read(os.path.join(os.path.dirname(__file__), conf_path))
 
 NETWORK_TIME_STEP = 10
 
-MAX_NETWORK_SPEED = conf["Generator"].getfloat("MaxNetworkSpeed") # in Byte
+MAX_NETWORK_SPEED = generator_conf['max_network_speed']
 MAX_NETWORK_SPEED *= NETWORK_TIME_STEP
 
-HOST = conf["Generator"]["Host"]
-PORT = conf["REST Server"].getint("Port")
-DEBUG = conf["Server"].getboolean("Debug")
+HOST = generator_conf['host']
+PORT = ws_conf['port']
+DEBUG = general_conf['debug']
 
-USER_ID = conf["General"]["UserID"]
-PROJECT_ID = conf["Generator"]["ProjectID"]
+USER_ID = generator_conf['client_id']
+PROJECT_ID = generator_conf['project_id']
 
 
 uri = f"ws://{HOST}:{PORT}"

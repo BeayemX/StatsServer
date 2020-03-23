@@ -1,3 +1,4 @@
+import sys
 import os
 import asyncio
 import time
@@ -7,23 +8,29 @@ import configparser
 import threading
 from sqlite3 import connect
 
+# StatsServer
 from databaseutilities import initialize_database, project_exists, get_project_list_for_user
+import config_loader
 
 # Configuration
 ADDRESS = '0.0.0.0'
 
-# Loaded configuration
-conf = configparser.ConfigParser()
-conf.read(os.path.join(os.path.dirname(__file__),"settings.conf"))
+# Load configuration
+conf = config_loader.load()
+general_conf = conf['general']
+server_conf = conf['server']
+ws_conf = server_conf['websocket']
+db_conf = server_conf['database']
 
-DEBUG = conf["Server"].getboolean("Debug")
-PORT = conf["REST Server"].getint("Port")
 
-CLEAN_UP_INTERVAL = conf["REST Server"].getint("CleanUpInterval")
-MAX_AGE = conf["REST Server"].getint("MaxAge")
+DEBUG = general_conf['debug']
+PORT = ws_conf['port']
 
-DB_DIRECTORY = conf["Generator"]["DatabaseDirectory"]
-DB_FILE = conf["Generator"]["DatabaseName"]
+CLEAN_UP_INTERVAL = server_conf['cleanup_interval']
+MAX_AGE = server_conf['max_age']
+
+DB_DIRECTORY = db_conf['directory']
+DB_FILE = db_conf['file_name']
 DB_FULL_PATH = os.path.join(DB_DIRECTORY, DB_FILE)
 
 async def handle_messages(websocket, path): # This is executed once per websocket

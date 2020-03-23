@@ -3,7 +3,6 @@ import os
 import sys
 import time
 import json
-import configparser
 
 # Flask
 from flask import Flask, render_template, jsonify, request, abort
@@ -12,6 +11,7 @@ from flask_socketio import SocketIO, send, emit
 # Stats Server
 #from generator import get_values_for_label, USE_DELTA_COMPRESSION
 from databaseutilities import project_exists, get_project_id_for_name, get_project_list_for_user, get_id_for_user_pw, register_user
+import config_loader
 
 # Database access
 from sqlite3 import connect
@@ -19,27 +19,22 @@ from sqlite3 import connect
 import hashlib
 
 
-# Process sys args
-import argparse
-parser = argparse.ArgumentParser(description="This will show all values that can be toggled. The initial value is gathered from the configuration file(s). The default values are used if there are no files provided.")
-parser.add_argument("-c", "--conf", help="toggle the tasks category")
-args = parser.parse_args()
+# Load configuration
+conf = config_loader.load()
 
-conf_path = "settings.conf"
+general_conf = conf['general']
+server_conf = conf['server']
+generator_conf = conf['generator']
+frontend_conf = conf['server']['frontend']
+db_conf = conf['server']['database']
 
-if args.conf and os.path.isfile(args.conf):
-    conf_path = args.conf
 
-# Load settings from config file
-conf = configparser.ConfigParser()
-conf.read(os.path.join(os.path.dirname(__file__), conf_path))
+PORT = frontend_conf['port']
+DEBUG = general_conf['debug']
+USE_DELTA_COMPRESSION = server_conf['use_delta_compression']
 
-PORT = conf["Server"].getint("Port")
-DEBUG = conf["Server"].getboolean("Debug")
-USE_DELTA_COMPRESSION = conf["General"].getboolean("UseDeltaCompression")
-
-DB_DIR = conf["Generator"]["DatabaseDirectory"]
-DB_FILE = os.path.join(DB_DIR, conf["Generator"]["DatabaseName"])
+DB_DIR = db_conf['directory']
+DB_FILE = os.path.join(DB_DIR, db_conf['file_name'])
 
 # Initialize server
 app = Flask(__name__)
@@ -169,7 +164,7 @@ def index():
     return render_template("index.html")
 
 @app.route('/projectlist')
-def projectlist():    
+def projectlist():
     return render_template("projectlist.html")
 
 @app.route('/project/<projectname>')
@@ -267,5 +262,6 @@ def handle_my_custom_event(json_data):
     emit("update_data", get_data_as_json(projectid, ts))
 
 if __name__ == '__main__':
-	socketio.run(app, host='0.0.0.0', port=PORT)
+    print(f"Running server on port {PORT}")
+    socketio.run(app, host='0.0.0.0', port=PORT)
 

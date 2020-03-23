@@ -1,0 +1,29 @@
+{
+    "general": {
+        "debug": false
+    },
+    "generator": {
+        "project_id": "Project ID",
+        "host": "",
+        "client_id": "",
+        "max_network_speed": 5767168
+    },
+    "server": {
+        "use_delta_compression": true,
+        "cleanup_interval": 300,
+        "max_age": 86400,
+        "database": {
+            "file_name": "data.db",
+            "directory": "./"
+        },
+        "frontend": {
+            "port": "5678"
+        },
+        "websocket": {
+            "port": "5679"
+        },
+        "rest": {
+            "port": "5680"
+        }
+    }
+}

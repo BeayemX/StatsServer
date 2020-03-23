@@ -1,3 +1,6 @@
+# # # # # # # # # # # # # # #
+# # # # Legacy  class # # # #
+# # # # # # # # # # # # # # #
 from sqlite3 import connect
 import configparser
 import os
@@ -66,7 +69,7 @@ def post():
         "error": 0,
         "message": "Success"
     }
-    
+
     msgtype = data_dict["type"]
     if msgtype == "create_project":
         pass
@@ -133,6 +136,7 @@ def register():
     print(f"Registered {name} [{project_id}]")
     return project_id
 
+# TODO Legacy? should this be removed?
 @app.route('/add_data_point')
 def add_data_point():
     try:
@@ -154,7 +158,7 @@ def add_data_point():
 def thread_clean_up_database():
     while True:
         current_time = time.time()
-        
+
         # Clean up old entries
         with connect(DB_FULL_PATH) as conn:
             cursor = conn.cursor()
@@ -183,7 +187,7 @@ def thread_clean_up_database():
                 if len(data) == 0:
                     if (DEBUG):
                         print(projectid, "has been removed from the project list")
-                    
+
                     sql = 'DELETE FROM projects WHERE projectid=?'
                     args = (projectid, )
                     cursor.execute(sql, args)

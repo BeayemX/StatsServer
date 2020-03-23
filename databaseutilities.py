@@ -1,30 +1,20 @@
-from sqlite3 import connect
-import configparser
 import os
 import uuid
 
+from sqlite3 import connect
 
-# FIXME duplicate code in server.py (config reader)
-import argparse
+import config_loader
 
-parser = argparse.ArgumentParser(description="A setting-config file can be specified.")
-parser.add_argument("-c", "--conf", help="path to the config file")
-args = parser.parse_args()
+# Load configuration
+conf = config_loader.load()
+general_conf = conf['general']
+db_conf = conf['server']['database']
 
-conf_path = "settings.conf"
-if args.conf and os.path.isfile(args.conf):
-    conf_path = args.conf
-    print("Using alternative config file", conf_path)
 
-# FIXME duplicate code in server.py (database connection)
-# Load settings from config file
-conf = configparser.ConfigParser()
-conf.read(os.path.join(os.path.dirname(__file__), conf_path))
+DB_DIR = db_conf['directory']
+DB_FILE = os.path.join(DB_DIR, db_conf['file_name'])
 
-DB_DIR = conf["Generator"]["DatabaseDirectory"]
-DB_FILE = os.path.join(DB_DIR, conf["Generator"]["DatabaseName"])
-
-DEBUG = conf["Server"].getboolean("Debug")
+DEBUG = general_conf['debug']
 
 def project_exists(projectid):
     with connect(DB_FILE) as conn:
@@ -37,11 +27,11 @@ def project_exists(projectid):
     project_ids = [x[1] for x in data]
 
     if DEBUG:
-        print("Available projects:")
+        #print("Available projects:")
         for entry in data:
             userid = entry[0]
             projectname = entry[1]
-            print(" ", userid, projectname)
+            #print(" ", userid, projectname)
 
     return projectid in project_ids
 
@@ -79,16 +69,16 @@ def get_project_list_for_user(userid):
 
 def register_user(username, password):
     if not does_user_exist(username):
-    
+
         with connect(DB_FILE) as conn:
             user_id = uuid.uuid4().hex
-            
+
             cursor = conn.cursor()
             sql = 'INSERT INTO users (id, username, password) values(?, ?, ?)'
             args = (user_id, username, password)
             cursor.execute(sql, args)
             return user_id
-    
+
     return None
 
 def does_user_exist(username):
