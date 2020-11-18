@@ -28,8 +28,6 @@ conf = config_loader.load()
 
 general_conf = conf['general']
 generator_conf = conf['generator']
-ws_conf = conf['server']['websocket']
-
 
 NETWORK_TIME_STEP = 10
 
@@ -37,14 +35,10 @@ MAX_NETWORK_SPEED = generator_conf['max_network_speed']
 MAX_NETWORK_SPEED *= NETWORK_TIME_STEP
 
 HOST = generator_conf['host']
-PORT = ws_conf['port']
 DEBUG = general_conf['debug']
 
 USER_ID = generator_conf['client_id']
 PROJECT_ID = generator_conf['project_id']
-
-
-uri = f"ws://{HOST}:{PORT}"
 
 RECONNECT_TIME = 5
 pending_requests = []
@@ -267,13 +261,14 @@ def thread_gathering(func, thread_id, category, sleep_time):
 def upload_data(data):
     data["userid"] = USER_ID
     data["project"] = PROJECT_ID
+    data['type'] = 'add_data'
     # data["type"] = "add_value"
 
     pending_requests.append(data)
 
 async def main():
     global pending_requests
-    async with websockets.connect(uri) as websocket:
+    async with websockets.connect(HOST) as websocket:
         async def send(data):
             await websocket.send(json.dumps(data))
         print("Connection established")

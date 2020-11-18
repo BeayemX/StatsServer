@@ -24,8 +24,6 @@ let oldestTimeStamp = 0;
 let debugMode = false;
 let debugCounter = 0;
 
-let socket;
-
 let averageData = false;
 let graphSteps = 110;
 
@@ -50,8 +48,6 @@ let prepareDataButton;
 
 let timedropdown;
 let customOptionSelect;
-
-
 
 function onLoad() {
     restoreSettings();
@@ -98,27 +94,8 @@ function onLoad() {
     _updateDebugMode();
 
 
-    // Connect to websockets
-    socket = io.connect('http://' + document.domain + ':' + location.port, { 'transports': ['websocket'] });
-
-    socket.on('connect', function() {
-        //socket.emit('my event', {data: 'I\'m connected!'});
-        //socket.send('string argument');
-        // not working even though on the server there is a on('json') callback
-        // maybe old version?
-        // socket.send({
-        //    data: "i am a json"
-        // });
-    });
-
-
-    socket.on('update_data', (msg) => {
-        handleDataUpdate(msg);
-    })
-
     if (autoReload)
         activateAutoUpdate();
-
 
     _requestData();
     changePreparationResolution(0); // calling _updateGraphs() (initially unnecessary)
@@ -130,14 +107,14 @@ function _requestData() {
         return;
     }
 
-    waitingForRequest = true;
-
-    socket.emit("request_data", {
+    const result = send({
         "last_server_sync_timestamp": last_server_sync_timestamp,
-        "projectid": projectid
-        });
+        "projectid": projectid,
+        "type": "request_data"
+    });
 
     log("Requesting data...");
+    waitingForRequest = result;
 }
 
 function activateAutoUpdate() {
@@ -1040,36 +1017,38 @@ function _onCanvasMouseMove(ev, canvas) {
     // const clientY = ev.touches[0].clientY - rect.top;
     const timeRange = _getTimeRange();
 
-    if (ev.touches.length == 1){
+    if (ev.touches) {
+        if (ev.touches.length == 1){
 
-        if (singleTouchStart) {
-            const clientX = ev.touches[0].clientX - rect.left;
-            _cursorPos += (clientX - singleTouchStart) * timeRange / canvas.width;
+            if (singleTouchStart) {
+                const clientX = ev.touches[0].clientX - rect.left;
+                _cursorPos += (clientX - singleTouchStart) * timeRange / canvas.width;
 
-            singleTouchStart = clientX;
+                singleTouchStart = clientX;
 
-        } else if (touchStartX) {
-            let clientX = 0;
-            let scrollWidth = canvas.width;
+            } else if (touchStartX) {
+                let clientX = 0;
+                let scrollWidth = canvas.width;
 
-            for (let touch of ev.touches) {
-                clientX += touch.clientX;
+                for (let touch of ev.touches) {
+                    clientX += touch.clientX;
+                }
+
+                clientX /= ev.touches.length;
+
+
+                rightValueBound -= (clientX - touchStartX) * timeRange / scrollWidth;
+                _updateTimeRangeOffset();
+
+                touchStartX = clientX;
             }
+        } else if (ev.touches.length == 2) {
+            const previousPinchDiff = currentPinchDiff;
+            currentPinchDiff = Math.abs(ev.touches[0].clientX - ev.touches[1].clientX);
 
-            clientX /= ev.touches.length;
-
-
-            rightValueBound -= (clientX - touchStartX) * timeRange / scrollWidth;
-            _updateTimeRangeOffset();
-
-            touchStartX = clientX;
+            let delta = previousPinchDiff - currentPinchDiff;
+            changeTimeRange(delta * timeRange / canvas.width);
         }
-    } else if (ev.touches.length == 2) {
-        const previousPinchDiff = currentPinchDiff;
-        currentPinchDiff = Math.abs(ev.touches[0].clientX - ev.touches[1].clientX);
-
-        let delta = previousPinchDiff - currentPinchDiff;
-        changeTimeRange(delta * timeRange / canvas.width);
     }
 
     _clampCursorToVisibleRange();

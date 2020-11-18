@@ -10,19 +10,15 @@
 
 	<link href="https://fonts.googleapis.com/css?family=Oswald" rel="stylesheet">
 
-	<!--Websockets-->
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-	<!-- TODO without the next line it is not possible to call functions on localhost -->
-	<script type=text/javascript>$SCRIPT_ROOT = {{ request.script_root|tojson|safe }};</script>
-	<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
-
-	<!--My scripts-->
 	<script type="text/javascript" src="{{ url_for('static',filename='scripts/utilities.js') }}"></script>
 	<script type="text/javascript" src="{{ url_for('static',filename='scripts/script.js') }}"></script>
 	<script type="text/javascript" src="{{ url_for('static',filename='scripts/CategoryWrapper.js') }}"></script>
+	<script type="text/javascript" src="{{ url_for('static',filename='scripts/websocket.js') }}"></script>
+
 	<script type="text/javascript" charset="utf-8">
-		// Empty script area for testing stufff
 		const projectid = '{{projectid}}';
+		const ws_host = '{{ws_host}}';
+		connectToWebSocket(ws_host);
 	</script>
 
 </head>
