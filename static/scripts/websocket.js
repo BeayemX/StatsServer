@@ -8,6 +8,7 @@ function connectToWebSocket() {
     // Connect to websockets
     ws.addEventListener('open', (event) => {
         console.log("Connected");
+    	_requestData();
     });
 
     ws.addEventListener('message', (event) => {
@@ -42,3 +43,4 @@ function send(sendData) {
     }
     return true;
 }
+

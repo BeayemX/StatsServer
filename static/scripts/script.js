@@ -97,7 +97,6 @@ function onLoad() {
     if (autoReload)
         activateAutoUpdate();
 
-    _requestData();
     changePreparationResolution(0); // calling _updateGraphs() (initially unnecessary)
 }
 
@@ -1158,3 +1157,4 @@ function _humanizeTime(sec) {
 function _getElementColor(categoryName, label) {
     return elements[categoryName].labels[label]["active"] ? elements[categoryName].labels[label]["color"] : INACTIVE_COLOR;
 }
+
