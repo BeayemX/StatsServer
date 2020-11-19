@@ -129,8 +129,12 @@ def delete_data_keep_users():
         cursor = conn.cursor()
         cursor.execute('DROP TABLE data')
         cursor.execute('DROP TABLE projects')
+        print("Data has been deleted")
+    initialize_database()
 
 
 if __name__ == "__main__":
-    if input("Delete data (keeping users)?" == 'y'):
+    if input("Delete data (keeping users)?\n> ") == 'yes':
         delete_data_keep_users()
+    else:
+        print("Aborted...")
