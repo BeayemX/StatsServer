@@ -9,8 +9,9 @@ import threading
 from sqlite3 import connect
 
 # StatsServer
-from databaseutilities import initialize_database, project_exists, get_project_list_for_user
 import config_loader
+from databaseutilities import initialize_database, add_data_point
+
 
 # Load configuration
 conf = config_loader.load()
@@ -23,17 +24,8 @@ ws_conf = server_conf['websocket']
 db_conf = server_conf['database']
 frontend_conf = server_conf['frontend']
 
-db_conf = conf['server']['database']
-
 USE_DELTA_COMPRESSION = server_conf['use_delta_compression']
 
-#DB_DIR = db_conf['directory']
-#DB_FILE = os.path.join(DB_DIR, db_conf['file_name'])
-
-# Configuration
-ADDRESS = '0.0.0.0'
-
-# Load configuration
 DEBUG_LOG = general_conf['log']
 PORT = ws_conf['port']
 
@@ -44,8 +36,11 @@ DB_DIRECTORY = db_conf['directory']
 DB_FILE = db_conf['file_name']
 DB_FULL_PATH = os.path.join(DB_DIRECTORY, DB_FILE)
 
+# Configuration
+ADDRESS = '0.0.0.0'
 
-async def handle_messages(websocket, path): # This is executed once per websocket
+
+async def handle_messages(websocket, path):  # This is executed once per websocket
     print("Websocket connection established")
     # TODO check for uuid login info here?
     try:
@@ -64,7 +59,7 @@ async def handle_messages(websocket, path): # This is executed once per websocke
             if action_type == 'request_data':
                 await request_data(websocket, data)
             elif action_type == 'add_data':
-                _add_data_point(data["userid"], data["project"], data["category"], data["label"], data["value"])
+                add_data_point(data["userid"], data["project"], data["category"], data["label"], data["value"])
             else:
                 print(f"No handler for data type {data['type']}")
 
@@ -83,25 +78,6 @@ async def request_data(websocket, data):
         'type': 'update_data',
         'data': statsdata,
     }))
-
-
-def _add_data_point(userid, projectid, category, label, value):
-    timestamp = time.time()
-    with connect(DB_FULL_PATH) as conn:
-        cursor = conn.cursor()
-        sql = 'INSERT INTO data (time, userid, projectid, category, label, value) values(?, ?, ?, ?, ?, ?)'
-        args = (timestamp, userid, projectid, category, label, value)
-        cursor.execute(sql, args)
-
-        if not project_exists(projectid): # TODO unnecessary check on every call, maybe only do when establishing connection?
-            sql = 'INSERT INTO projects (userid, projectid) values(?, ?)'
-            args = (userid, projectid)
-            cursor.execute(sql, args)
-        else:
-            pass
-
-        return True
-    return False
 
 def thread_clean_up_database():
     while True:

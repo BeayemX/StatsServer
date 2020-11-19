@@ -1,4 +1,5 @@
 import os
+import time
 import uuid
 
 from sqlite3 import connect
@@ -15,6 +16,7 @@ DB_DIR = db_conf['directory']
 DB_FILE = os.path.join(DB_DIR, db_conf['file_name'])
 
 DEBUG_LOG = general_conf['log']
+
 
 def project_exists(projectid):
     with connect(DB_FILE) as conn:
@@ -35,6 +37,7 @@ def project_exists(projectid):
 
     return projectid in project_ids
 
+
 def get_project_id_for_name(projectname):
     with connect(DB_FILE) as conn:
         cursor = conn.cursor()
@@ -50,6 +53,7 @@ def get_project_id_for_name(projectname):
             return projectid
 
     return None
+
 
 def get_project_list_for_user(userid):
     with connect(DB_FILE) as conn:
@@ -67,6 +71,7 @@ def get_project_list_for_user(userid):
     print("No projects found")
     return []
 
+
 def register_user(username, password):
     if not does_user_exist(username):
 
@@ -81,6 +86,7 @@ def register_user(username, password):
 
     return None
 
+
 def does_user_exist(username):
     with connect(DB_FILE) as conn:
         cursor = conn.cursor()
@@ -89,6 +95,7 @@ def does_user_exist(username):
         cursor.execute(sql, args)
         data = cursor.fetchall()
         return len(data) > 0
+
 
 def get_id_for_user_pw(username, password):
     with connect(DB_FILE) as conn:
@@ -107,6 +114,26 @@ def get_id_for_user_pw(username, password):
             return db_id
 
     return None
+
+
+def add_data_point(userid, projectid, category, label, value):
+    timestamp = time.time()
+    with connect(DB_FILE) as conn:
+        cursor = conn.cursor()
+        sql = 'INSERT INTO data (time, userid, projectid, category, label, value) values(?, ?, ?, ?, ?, ?)'
+        args = (timestamp, userid, projectid, category, label, value)
+        cursor.execute(sql, args)
+
+        if not project_exists(projectid): # TODO unnecessary check on every call, maybe only do when establishing connection?
+            sql = 'INSERT INTO projects (userid, projectid) values(?, ?)'
+            args = (userid, projectid)
+            cursor.execute(sql, args)
+        else:
+            pass
+
+        return True
+    return False
+
 
 def initialize_database():
     with connect(DB_FILE) as conn:
