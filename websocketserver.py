@@ -95,8 +95,8 @@ def _add_data_point(userid, projectid, category, label, value):
     timestamp = time.time()
     with connect(DB_FULL_PATH) as conn:
         cursor = conn.cursor()
-        sql = 'INSERT INTO data (time, projectid, category, label, value) values(?, ?, ?, ?, ?)'
-        args = (timestamp, projectid, category, label, value)
+        sql = 'INSERT INTO data (time, userid, projectid, category, label, value) values(?, ?, ?, ?, ?, ?)'
+        args = (timestamp, userid, projectid, category, label, value)
         cursor.execute(sql, args)
 
         if not project_exists(projectid): # TODO unnecessary check on every call, maybe only do when establishing connection?

@@ -117,8 +117,20 @@ def initialize_database():
         #cursor.execute('DROP TABLE data')
         #cursor.execute('DROP TABLE projects')
 
-        cursor.execute('CREATE TABLE IF NOT EXISTS data (projectid STRING, category STRING, label STRING, time REAL, value REAL)')
-        cursor.execute('CREATE INDEX IF NOT EXISTS category_index ON data (projectid, category, label)')
+        cursor.execute('CREATE TABLE IF NOT EXISTS data (userid STRING, projectid STRING, category STRING, label STRING, time REAL, value REAL)')
+        cursor.execute('CREATE INDEX IF NOT EXISTS category_index ON data (userid, projectid, category, label)')
 
         cursor.execute('CREATE TABLE IF NOT EXISTS projects (userid STRING, projectid STRING)')
         cursor.execute('CREATE TABLE IF NOT EXISTS users (id STRING, username STRING, password STRING)')
+
+
+def delete_data_keep_users():
+    with connect(DB_FILE) as conn:
+        cursor = conn.cursor()
+        cursor.execute('DROP TABLE data')
+        cursor.execute('DROP TABLE projects')
+
+
+if __name__ == "__main__":
+    if input("Delete data (keeping users)?" == 'y'):
+        delete_data_keep_users()
