@@ -1,11 +1,10 @@
-import sys
 import os
 import asyncio
 import time
 import json
 import websockets
-import configparser
 import threading
+
 from sqlite3 import connect
 
 # StatsServer
@@ -18,29 +17,23 @@ conf = config_loader.load()
 general_conf = conf['general']
 server_conf = conf['server']
 generator_conf = conf['generator']
-frontend_conf = conf['server']['frontend']
+
+ws_conf = server_conf['websocket']
+db_conf = server_conf['database']
+frontend_conf = server_conf['frontend']
+
 db_conf = conf['server']['database']
 
-
-PORT = frontend_conf['port']
-DEBUG = general_conf['debug']
 USE_DELTA_COMPRESSION = server_conf['use_delta_compression']
 
-DB_DIR = db_conf['directory']
-DB_FILE = os.path.join(DB_DIR, db_conf['file_name'])
+#DB_DIR = db_conf['directory']
+#DB_FILE = os.path.join(DB_DIR, db_conf['file_name'])
 
 # Configuration
 ADDRESS = '0.0.0.0'
 
 # Load configuration
-conf = config_loader.load()
-general_conf = conf['general']
-server_conf = conf['server']
-ws_conf = server_conf['websocket']
-db_conf = server_conf['database']
-
-
-DEBUG = general_conf['debug']
+DEBUG_LOG = general_conf['log']
 PORT = ws_conf['port']
 
 CLEAN_UP_INTERVAL = server_conf['cleanup_interval']
@@ -58,7 +51,7 @@ async def handle_messages(websocket, path): # This is executed once per websocke
         async for message in websocket:
             data = json.loads(message)
 
-            if DEBUG:
+            if DEBUG_LOG:
                 print(time.time(), json.dumps(data))
 
             try:
@@ -139,7 +132,7 @@ def thread_clean_up_database():
                 data = cursor.fetchall()
 
                 if len(data) == 0:
-                    if (DEBUG):
+                    if (DEBUG_LOG):
                         print(projectid, "has been removed from the project list")
 
                     sql = 'DELETE FROM projects WHERE projectid=?'
@@ -149,7 +142,7 @@ def thread_clean_up_database():
         # Finalize
         delta_time = time.time() - current_time
 
-        if (DEBUG):
+        if (DEBUG_LOG):
             print("[ Clean Up ]".ljust(16), str(delta_time))
 
         time.sleep(CLEAN_UP_INTERVAL)

@@ -35,7 +35,7 @@ MAX_NETWORK_SPEED = generator_conf['max_network_speed']
 MAX_NETWORK_SPEED *= NETWORK_TIME_STEP
 
 HOST = generator_conf['host']
-DEBUG = general_conf['debug']
+DEBUG = general_conf['log']
 
 USER_ID = generator_conf['client_id']
 PROJECT_ID = generator_conf['project_id']

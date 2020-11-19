@@ -1,6 +1,7 @@
 {
     "general": {
-        "debug": false
+        "debug": false,
+        "log": true
     },
     "generator": {
         "project_id": "Project ID",

@@ -14,7 +14,7 @@ db_conf = conf['server']['database']
 DB_DIR = db_conf['directory']
 DB_FILE = os.path.join(DB_DIR, db_conf['file_name'])
 
-DEBUG = general_conf['debug']
+DEBUG_LOG = general_conf['log']
 
 def project_exists(projectid):
     with connect(DB_FILE) as conn:
@@ -26,12 +26,12 @@ def project_exists(projectid):
 
     project_ids = [x[1] for x in data]
 
-    if DEBUG:
-        #print("Available projects:")
+    if DEBUG_LOG:
+        # print("Available projects:")
         for entry in data:
             userid = entry[0]
             projectname = entry[1]
-            #print(" ", userid, projectname)
+            # print(" ", userid, projectname)
 
     return projectid in project_ids
 
