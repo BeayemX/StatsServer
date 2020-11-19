@@ -155,19 +155,6 @@ def thread_clean_up_database():
         time.sleep(CLEAN_UP_INTERVAL)
 
 
-def handle_my_custom_event(json_data):
-    projectid = json_data["projectid"]
-    ts = json_data["last_server_sync_timestamp"]
-
-    print("\n < < < Requesting data from client > > >", ts)
-    try:
-        ts = int(ts)
-    except ValueError:
-        ts = 0
-
-    emit("update_data", get_data_as_json(projectid, ts))
-
-
 def get_data_as_json(projectid, last_server_sync_timestamp):
     print("> > get_data_as_json")
     gathered_data = gather_data(projectid)
