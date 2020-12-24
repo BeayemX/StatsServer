@@ -17,6 +17,7 @@ class CategoryWrapper {
         // this.unit = JSON.parse(localStorage.getItem(this.get_name_for_local_storage()));
         this.initialUnitIndex = localStorage.getItem(this.get_name_for_local_storage()) || 0;
         this.unit = scaleUnits[this.initialUnitIndex];
+        this.autoScale = this.unit !== " %";
 
         // Members
         this.labels = {}
