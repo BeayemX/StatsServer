@@ -155,7 +155,8 @@ def _get_disk_entries():
 
 
     for name, path in disks:
-        entries[name] = create_category_entry(psutil.disk_usage(path).used, "byte", 0, psutil.disk_usage(path).total)
+        # entries[name] = create_category_entry(psutil.disk_usage(path).used, "byte", 0, psutil.disk_usage(path).total)
+        entries[name] = create_category_entry(psutil.disk_usage(path).percent, " %")
 
     return entries
 
