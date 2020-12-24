@@ -133,11 +133,11 @@ def add_memory_entries(data):
 
 def _get_memory_entries():
     entries = {}
-    #entries["RAM"] = create_category_entry(psutil.virtual_memory().used, "byte", 0, psutil.virtual_memory().total)
-    #entries["Swap"] = create_category_entry(psutil.swap_memory().used, "byte", 0, psutil.swap_memory().total)
+    # entries["RAM"] = create_category_entry(psutil.virtual_memory().used, "byte", 0, psutil.virtual_memory().total)
+    # entries["Swap"] = create_category_entry(psutil.swap_memory().used, "byte", 0, psutil.swap_memory().total)
 
     entries["RAM"] = create_category_entry(psutil.virtual_memory().percent, " %")
-    entries["Swap"] = create_category_entry(psutil.swap_memory()., " %")
+    entries["Swap"] = create_category_entry(psutil.swap_memory().percent, " %")
 
     return entries
 
