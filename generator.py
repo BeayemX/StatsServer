@@ -145,8 +145,16 @@ def add_disk_entries(data):
 
 def _get_disk_entries():
     entries = {}
+    # disks = [("Disk", "/"), ]
+    disks = []
+    for disk in psutil.disk_partitions():
+        name = disk.device
+        path = disk.mountpoint
+        # usage = psutil.disk_usage(path)
+        disks.append((name, path))
 
-    for name, path in [("Disk", "/"), ]:
+
+    for name, path in disks:
         entries[name] = create_category_entry(psutil.disk_usage(path).used, "byte", 0, psutil.disk_usage(path).total)
 
     return entries
