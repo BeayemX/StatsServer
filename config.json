@@ -12,7 +12,8 @@
             "directory": "./"
         },
         "frontend": {
-            "port": "5678"
+            "port": "5678",
+            "host": "wss://your-server.com"
         },
         "websocket": {
             "port": "7890"

@@ -18,7 +18,6 @@ conf = config_loader.load()
 
 general_conf = conf['general']
 server_conf = conf['server']
-generator_conf = conf['generator']
 
 ws_conf = server_conf['websocket']
 db_conf = server_conf['database']

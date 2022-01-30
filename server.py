@@ -16,11 +16,10 @@ import hashlib
 conf = config_loader.load()
 general_conf = conf['general']
 server_conf = conf['server']
-generator_conf = conf['generator']
 frontend_conf = conf['server']['frontend']
 db_conf = conf['server']['database']
 
-HOST = generator_conf['host']
+HOST = frontend_conf['host']
 PORT = frontend_conf['port']
 DEBUG = general_conf['debug']
 USE_DELTA_COMPRESSION = server_conf['use_delta_compression']
