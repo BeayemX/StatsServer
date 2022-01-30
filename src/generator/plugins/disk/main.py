@@ -8,8 +8,8 @@ def get_entries():
     return _get_disk_entries()
 
 def get_config():
-    category_title = "Disk"
-    sleep_duration = 3
+    category_title = "Storage"
+    sleep_duration = 30
 
     config = Config(category_title, sleep_duration)
 
