@@ -3,12 +3,6 @@
         "debug": false,
         "log": true
     },
-    "generator": {
-        "project_id": "Project ID",
-        "host": "",
-        "client_id": "",
-        "max_network_speed": 5767168
-    },
     "server": {
         "use_delta_compression": true,
         "cleanup_interval": 300,

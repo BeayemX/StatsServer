@@ -1,0 +1,6 @@
+{
+    "project_id": "MyPC",
+    "host": "wss://my-server.com",
+    "client_id": "asdf1234",
+    "debug": false
+}
